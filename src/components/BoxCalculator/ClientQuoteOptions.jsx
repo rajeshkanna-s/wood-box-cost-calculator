@@ -32,13 +32,14 @@ export default function ClientQuoteOptions({ isOpen, options, onChange, onClose,
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 no-print">
+    <div className="fixed inset-0 z-50 no-print overflow-y-auto overscroll-contain px-3 py-3 sm:px-4 sm:py-10">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative mx-auto mt-10 w-full max-w-xl px-4">
+      <div className="relative z-10 mx-auto flex min-h-full w-full max-w-xl items-center">
         <div
-          className="rounded-2xl border p-5 shadow-2xl"
-          style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)', color: 'var(--text-main)' }}
+          className="flex max-h-[calc(100dvh-1.5rem)] w-full flex-col overflow-hidden rounded-2xl border shadow-2xl sm:max-h-[calc(100dvh-5rem)]"
+          style={{ background: 'var(--bg-main)', borderColor: 'var(--card-border)', color: 'var(--text-main)' }}
         >
+          <div className="shrink-0 p-5 pb-3">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase" style={{ color: 'var(--accent-wood)', letterSpacing: '0.08em' }}>
@@ -61,8 +62,9 @@ export default function ClientQuoteOptions({ isOpen, options, onChange, onClose,
               </svg>
             </button>
           </div>
+          </div>
 
-          <div className="mt-5 space-y-3">
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-5 py-2">
             {OPTIONS.map((option) => (
               <label
                 key={option.key}
@@ -85,17 +87,20 @@ export default function ClientQuoteOptions({ isOpen, options, onChange, onClose,
             ))}
           </div>
 
-          <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <div
+            className="shrink-0 border-t p-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"
+            style={{ borderColor: 'var(--card-border)', background: 'var(--bg-main)' }}
+          >
             <button
               type="button"
-              className="btn-secondary justify-center"
+              className="btn-secondary w-full justify-center sm:w-auto"
               onClick={onClose}
             >
               Cancel
             </button>
             <button
               type="button"
-              className="btn-primary justify-center"
+              className="btn-primary w-full justify-center sm:w-auto"
               onClick={onPrint}
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
