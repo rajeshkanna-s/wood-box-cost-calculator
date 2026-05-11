@@ -18,12 +18,12 @@ const DEFAULT_CLIENT_QUOTE_OPTIONS = {
 };
 
 export default function App() {
-  const { 
-    dims, 
-    rates, 
-    result, 
-    updateDim, 
-    updateRate, 
+  const {
+    dims,
+    rates,
+    result,
+    updateDim,
+    updateRate,
     loadPreset,
     updatePart,
     addCustomPart,
@@ -66,7 +66,7 @@ export default function App() {
       <div className="screen-calculator max-w-5xl mx-auto">
         <header className="mb-10 animate-fade-in relative">
           <div className="absolute top-0 right-0">
-            <button 
+            <button
               onClick={() => setIsDark(!isDark)}
               className="inline-flex items-center gap-2 p-2 rounded-lg border border-transparent hover:border-gray-300/30 transition-all duration-200"
               style={{ background: 'var(--card-inner-bg)', color: 'var(--text-main)' }}
@@ -86,7 +86,7 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3 mb-3 pr-24">
-            <div 
+            <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{
                 background: 'linear-gradient(135deg, #e89c3f 0%, #d26a17 100%)',
@@ -103,10 +103,7 @@ export default function App() {
               </h1>
             </div>
           </div>
-          <p className="text-sm max-w-xl leading-relaxed no-print" style={{ color: 'var(--text-light)' }}>
-            Precision cost estimation for pine wood packing boxes. Auto-converts dimensions, 
-            computes CFT for 8 timber parts, applies waste factor & profit margin.
-          </p>
+
           <div className="glow-line mt-6 print:hidden" />
         </header>
 
@@ -125,7 +122,7 @@ export default function App() {
           </div>
 
           <div className="animate-slide-up no-print" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
-            <PartsTable 
+            <PartsTable
               parts={result.partsWithCFT}
               result={result}
               rates={rates}
@@ -151,7 +148,7 @@ export default function App() {
         <footer className="mt-12 pb-6 text-center no-print">
           <div className="glow-line mb-6" />
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            Elshaddai Wood Box Cost Calculator • Reverse-engineered from Excel formulas • All rates in ₹ per CFT
+            @Copyright Elshaddai
           </p>
         </footer>
       </div>
