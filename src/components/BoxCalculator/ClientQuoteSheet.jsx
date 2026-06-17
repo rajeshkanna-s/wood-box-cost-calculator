@@ -53,13 +53,12 @@ export default function ClientQuoteSheet({ dims, rates, result, options, active 
   ];
 
   return (
-    <section className={`quote-sheet quote-sheet-client ${active ? 'is-active' : ''}`} aria-label="Printable client quote">
+    <section id="quote-sheet-client" className={`quote-sheet quote-sheet-client ${active ? 'is-active' : ''}`} aria-label="Printable client quote">
       <header className="quote-header client-quote-header">
         <div className="quote-brand">
           <div className="quote-brand-mark" aria-hidden="true">E</div>
           <div>
             <p className="quote-eyebrow">Elshaddai</p>
-            <h1>Client Quote</h1>
             <p className="quote-subtitle">Wood packing box quotation</p>
           </div>
         </div>

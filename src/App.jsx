@@ -57,6 +57,124 @@ export default function App() {
     });
   };
 
+  const downloadPDF = async (mode) => {
+    const elementId = mode === 'client' ? 'quote-sheet-client' : 'quote-sheet-detailed';
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const quoteStamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const cleanTotal = Math.round(result.finalTotal || 0);
+    const filename = mode === 'client'
+      ? `Elshaddai_Client_Quote_EWB-${quoteStamp}-${cleanTotal}.pdf`
+      : `Elshaddai_Detailed_Quote_EWB-${quoteStamp}-${cleanTotal}.pdf`;
+
+    // Create a hidden wrapper that is absolute positioned but occupies 0px height, so html2canvas renders it fully without off-screen clipping
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'absolute';
+    wrapper.style.left = '0';
+    wrapper.style.top = '0';
+    wrapper.style.width = '794px';
+    wrapper.style.height = '0';
+    wrapper.style.overflow = 'hidden';
+    wrapper.style.zIndex = '-9999';
+    wrapper.style.pointerEvents = 'none';
+
+    const container = document.createElement('div');
+    container.className = 'pdf-export-container';
+    container.style.width = '794px';
+    container.style.background = '#ffffff';
+    container.style.color = '#111827';
+    container.style.boxSizing = 'border-box';
+    
+    const clone = element.cloneNode(true);
+    clone.classList.add('is-active');
+    clone.style.display = 'block';
+    container.appendChild(clone);
+    wrapper.appendChild(container);
+    document.body.appendChild(wrapper);
+
+    const tempStyle = document.createElement('style');
+    tempStyle.id = 'html2pdf-temp-styles';
+    
+    let cssText = '';
+    for (let i = 0; i < document.styleSheets.length; i++) {
+      try {
+        const sheet = document.styleSheets[i];
+        if (sheet.href && !sheet.href.startsWith(window.location.origin)) continue;
+        const rules = sheet.cssRules || sheet.rules;
+        if (!rules) continue;
+        for (let j = 0; j < rules.length; j++) {
+          const rule = rules[j];
+          if (rule.type === CSSRule.MEDIA_RULE && rule.media.mediaText === 'print') {
+            for (let k = 0; k < rule.cssRules.length; k++) {
+              const subRule = rule.cssRules[k];
+              if (subRule.type === CSSRule.PAGE_RULE) continue;
+              
+              let ruleText = subRule.cssText;
+              const parts = ruleText.split('{');
+              if (parts.length >= 2) {
+                const selectors = parts[0].split(',');
+                const prepended = selectors.map(sel => {
+                  const s = sel.trim();
+                  if (s.startsWith('html') || s.startsWith('body') || s.startsWith('#root') || s.startsWith('.app-root')) {
+                    return '.pdf-export-container';
+                  }
+                  return `.pdf-export-container ${s}`;
+                });
+                parts[0] = prepended.join(', ');
+                ruleText = parts.join('{');
+              }
+              cssText += ruleText + '\n';
+            }
+          }
+        }
+      } catch (e) {
+        console.warn("Could not read stylesheet rule for PDF generation:", e);
+      }
+    }
+    
+    cssText += `
+      .pdf-export-container {
+        font-family: 'Inter', Arial, sans-serif !important;
+      }
+      .pdf-export-container .quote-sheet {
+        display: block !important;
+        width: 100% !important;
+      }
+      .pdf-export-container .no-print {
+        display: none !important;
+      }
+    `;
+    
+    tempStyle.innerHTML = cssText;
+    document.head.appendChild(tempStyle);
+
+    // Wait a brief period to let browser settle styles and DOM structure
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    try {
+      const html2pdfModule = (await import('html2pdf.js')).default;
+      const opt = {
+        margin: 0,
+        filename: filename,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      await html2pdfModule().from(container).set(opt).save();
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+    } finally {
+      document.body.removeChild(wrapper);
+      document.head.removeChild(tempStyle);
+    }
+  };
+
   const updateClientQuoteOption = (key, value) => {
     setClientQuoteOptions((current) => ({ ...current, [key]: value }));
   };
@@ -137,6 +255,7 @@ export default function App() {
             <CostSummary
               result={result}
               onPrintQuote={() => printQuote('detailed')}
+              onDownloadPDF={() => downloadPDF('detailed')}
               onOpenClientQuote={() => {
                 setPrintMode('client');
                 setIsClientQuoteOpen(true);
@@ -161,6 +280,10 @@ export default function App() {
         onPrint={() => {
           setIsClientQuoteOpen(false);
           printQuote('client');
+        }}
+        onDownloadPDF={() => {
+          setIsClientQuoteOpen(false);
+          downloadPDF('client');
         }}
       />
       <QuoteSheet dims={dims} rates={rates} result={result} active={printMode === 'detailed'} />

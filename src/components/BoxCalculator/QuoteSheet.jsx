@@ -59,13 +59,12 @@ export default function QuoteSheet({ dims, rates, result, active = false }) {
   ];
 
   return (
-    <section className={`quote-sheet quote-sheet-detailed ${active ? 'is-active' : ''}`} aria-label="Printable wood box quote">
+    <section id="quote-sheet-detailed" className={`quote-sheet quote-sheet-detailed ${active ? 'is-active' : ''}`} aria-label="Printable wood box quote">
       <header className="quote-header">
         <div className="quote-brand">
           <div className="quote-brand-mark" aria-hidden="true">E</div>
           <div>
             <p className="quote-eyebrow">Elshaddai</p>
-            <h1>Wood Box Quote</h1>
             <p className="quote-subtitle">Pine wood packing box • CFT-based costing</p>
           </div>
         </div>
@@ -197,7 +196,6 @@ export default function QuoteSheet({ dims, rates, result, active = false }) {
       <footer className="quote-footer">
         <span>• Quote generated from current calculator inputs.</span>
         <span>• Prices are estimates and may vary with material availability.</span>
-        <span>• Print or save as PDF for client sharing.</span>
       </footer>
     </section>
   );

@@ -441,6 +441,8 @@
     color: #111827;
     font-size: 13px;
     line-height: 1.44;
+    padding: 32px;
+    box-sizing: border-box;
   }
 
   .quote-sheet.is-active {
@@ -459,7 +461,7 @@
     justify-content: space-between;
     gap: 16px;
     padding-bottom: 14px;
-    border-bottom: 2px solid #3d190a;
+    border-bottom: 1px solid #e5e7eb;
   }
 
   .quote-brand {
@@ -489,23 +491,26 @@
   }
 
   .quote-eyebrow {
-    color: #a85512;
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.11em;
+    color: #d26a17;
+    font-size: 26px;
+    font-weight: 900;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
+    line-height: 1.1;
   }
 
   .quote-header h1 {
-    color: #111827;
-    font-size: 35px;
-    font-weight: 900;
-    line-height: 1.05;
+    color: #374151;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-top: 2px;
   }
 
   .quote-subtitle {
-    color: #5f351e;
-    font-size: 12px;
+    color: #6b7280;
+    font-size: 11px;
+    margin-top: 1px;
   }
 
   .quote-meta {
