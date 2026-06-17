@@ -57,17 +57,18 @@ export default function ClientQuoteSheet({ dims, rates, result, options, active 
       <header className="quote-header client-quote-header">
         <div className="quote-brand">
           <div className="quote-brand-mark" aria-hidden="true">E</div>
-          <div>
-            <p className="quote-eyebrow">Elshaddai</p>
-            <p className="quote-subtitle">Wood packing box quotation</p>
+          <div className="quote-brand-text">
+            <span className="quote-brand-name">ELSHADDAI</span>
+            <span className="quote-brand-sub">Wood packing box quotation</span>
           </div>
         </div>
         <div className="quote-meta">
-          <div>
+          <h1 className="quote-doc-type">Client Quote</h1>
+          <div className="quote-meta-row">
             <span>Quote No.</span>
             <strong>{quoteNo}</strong>
           </div>
-          <div>
+          <div className="quote-meta-row">
             <span>Date</span>
             <strong>{quoteDateLabel}</strong>
           </div>

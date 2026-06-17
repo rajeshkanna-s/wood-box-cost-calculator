@@ -63,17 +63,18 @@ export default function QuoteSheet({ dims, rates, result, active = false }) {
       <header className="quote-header">
         <div className="quote-brand">
           <div className="quote-brand-mark" aria-hidden="true">E</div>
-          <div>
-            <p className="quote-eyebrow">Elshaddai</p>
-            <p className="quote-subtitle">Pine wood packing box • CFT-based costing</p>
+          <div className="quote-brand-text">
+            <span className="quote-brand-name">ELSHADDAI</span>
+            <span className="quote-brand-sub">Pine wood packing box • CFT-based costing</span>
           </div>
         </div>
         <div className="quote-meta">
-          <div>
+          <h1 className="quote-doc-type">Detailed Quote</h1>
+          <div className="quote-meta-row">
             <span>Quote No.</span>
             <strong>{quoteNo}</strong>
           </div>
-          <div>
+          <div className="quote-meta-row">
             <span>Date</span>
             <strong>{quoteDateLabel}</strong>
           </div>
