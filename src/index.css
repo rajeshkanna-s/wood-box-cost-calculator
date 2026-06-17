@@ -471,16 +471,14 @@
   }
 
   .quote-brand-mark {
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 52px;
     height: 52px;
-    line-height: 52px;
-    text-align: center;
     border-radius: 10px;
     background: #d26a17;
     color: #ffffff;
-    font-size: 32px;
-    font-weight: 900;
   }
 
   .quote-brand-text {

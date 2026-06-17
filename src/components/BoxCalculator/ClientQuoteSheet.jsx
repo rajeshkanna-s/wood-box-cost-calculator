@@ -56,7 +56,11 @@ export default function ClientQuoteSheet({ dims, rates, result, options, active 
     <section id="quote-sheet-client" className={`quote-sheet quote-sheet-client ${active ? 'is-active' : ''}`} aria-label="Printable client quote">
       <header className="quote-header client-quote-header">
         <div className="quote-brand">
-          <div className="quote-brand-mark" aria-hidden="true">E</div>
+          <div className="quote-brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 100 100" className="w-8 h-8 text-white" fill="currentColor">
+              <path d="M30 20 H70 V32 H42 V44 H65 V56 H42 V68 H70 V80 H30 Z" />
+            </svg>
+          </div>
           <div className="quote-brand-text">
             <span className="quote-brand-name">ELSHADDAI</span>
             <span className="quote-brand-sub">Wood packing box quotation</span>
