@@ -6,7 +6,14 @@ export default function PresetSelector({ onSelect }) {
     const selectedId = e.target.value;
     if (!selectedId) return;
     const preset = BOX_PRESETS.find(p => p.id === selectedId);
-    if (preset) onSelect(preset);
+    if (preset) {
+      const scrollY = window.scrollY;
+      e.target.blur();
+      onSelect(preset);
+      requestAnimationFrame(() => {
+        window.scrollTo(0, scrollY);
+      });
+    }
   };
 
   return (

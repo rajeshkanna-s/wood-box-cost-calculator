@@ -39,7 +39,9 @@ function getQuoteMeta(result) {
 export default function ClientQuoteSheet({ dims, rates, result, options, active = false }) {
   const { quoteDateLabel, quoteNo } = getQuoteMeta(result);
   const includedParts = result.partsWithCFT.filter((part) => !part.isExcluded);
-  const reperType = getReperType(dims.l);
+  const isMm = dims.unit === 'mm';
+  const lengthInInches = isMm ? dims.l / 25.4 : dims.l;
+  const reperType = getReperType(lengthInInches);
   const showCftSummary = options.showCftSummary || options.showWaste;
   const showAnyDetail = showCftSummary || options.showParts || options.showCostBreakdown;
 
@@ -54,32 +56,49 @@ export default function ClientQuoteSheet({ dims, rates, result, options, active 
 
   return (
     <section id="quote-sheet-client" className={`quote-sheet quote-sheet-client ${active ? 'is-active' : ''}`} aria-label="Printable client quote">
-      <header className="quote-header client-quote-header">
-        <div className="quote-brand">
-          <img src="/elshaddailogo.png" alt="Elshaddai Logo" className="quote-brand-logo" />
+      <header className="quote-header">
+        <div className="quote-brand-container">
+          <img src="/elshaddailogo.png" alt="El Shaddai Wood Packing Logo" className="quote-brand-logo" />
           <div className="quote-brand-text">
-            <span className="quote-brand-name">ELSHADDAI</span>
-            <span className="quote-brand-sub">Wood packing box quotation</span>
-          </div>
-        </div>
-        <div className="quote-meta">
-          <h1 className="quote-doc-type">Client Quote</h1>
-          <div className="quote-meta-row">
-            <span>Quote No.</span>
-            <strong>{quoteNo}</strong>
-          </div>
-          <div className="quote-meta-row">
-            <span>Date</span>
-            <strong>{quoteDateLabel}</strong>
+            <span className="brand-ewp-text quote-ewp-title">EWP</span>
+            <span className="brand-company-text quote-company-name">EL SHADDAI WOOD PACKING</span>
+            <span className="quote-brand-sub">(Pallet & all Type boxes)</span>
           </div>
         </div>
       </header>
 
+      <div className="quote-header-divider"></div>
+
+      <div className="quote-meta-section">
+        <div className="quote-meta-left">
+          <h1 className="quote-doc-type">Quotation</h1>
+          <div className="quote-meta-item">
+            <span className="quote-meta-label">Quote No:</span>
+            <span className="quote-meta-value">{quoteNo}</span>
+          </div>
+        </div>
+        <div className="quote-meta-right">
+          <div className="quote-meta-item">
+            <span className="quote-meta-label">Date:</span>
+            <span className="quote-meta-value">{quoteDateLabel}</span>
+          </div>
+        </div>
+      </div>
+
       <div className="client-quote-hero">
         <section className="quote-panel client-dimension-panel">
           <p className="quote-client-kicker">Box Dimensions</p>
-          <strong>{formatDimension(dims.l)} × {formatDimension(dims.w)} × {formatDimension(dims.h)} in</strong>
-          <span>{formatMm(inchToMm(dims.l))} × {formatMm(inchToMm(dims.w))} × {formatMm(inchToMm(dims.h))} mm</span>
+          {isMm ? (
+            <>
+              <strong>{formatDimension(dims.l)} × {formatDimension(dims.w)} × {formatDimension(dims.h)} mm</strong>
+              <span>{formatDimension(dims.l / 25.4)} × {formatDimension(dims.w / 25.4)} × {formatDimension(dims.h / 25.4)} in</span>
+            </>
+          ) : (
+            <>
+              <strong>{formatDimension(dims.l)} × {formatDimension(dims.w)} × {formatDimension(dims.h)} in</strong>
+              <span>{formatMm(inchToMm(dims.l))} × {formatMm(inchToMm(dims.w))} × {formatMm(inchToMm(dims.h))} mm</span>
+            </>
+          )}
           <small>{reperType}-Reper pine wood packing box</small>
         </section>
 
@@ -180,7 +199,7 @@ export default function ClientQuoteSheet({ dims, rates, result, options, active 
               <tr>
                 <th>Part</th>
                 <th>Description</th>
-                <th>Size (mm)</th>
+                <th>Size</th>
                 <th>Qty</th>
                 <th>CFT</th>
               </tr>
@@ -190,7 +209,13 @@ export default function ClientQuoteSheet({ dims, rates, result, options, active 
                 <tr key={`${part.id}-${index}`}>
                   <td>{part.id}</td>
                   <td>{part.label}</td>
-                  <td>{`${formatMm(part.l)} × ${formatMm(part.w)} × ${formatMm(part.h)}`}</td>
+                  <td>
+                    {`${part.useInchLength ? part.l + '"' : formatMm(part.l)} × ${
+                      part.useInchWidth ? part.w + '"' : formatMm(part.w)
+                    } × ${
+                      part.useInchHeight ? part.h + '"' : formatMm(part.h)
+                    }`}
+                  </td>
                   <td>{formatQty(part.qty)}</td>
                   <td>{formatCFT(part.cft)}</td>
                 </tr>
@@ -200,24 +225,33 @@ export default function ClientQuoteSheet({ dims, rates, result, options, active 
         </section>
       )}
 
-      <footer className="quote-footer client-quote-footer">
-        <div className="quote-footer-info">
-          <div className="quote-footer-address">
-            No.75, Appur Road, Panakottur, Maraimalai Nagar, Chengalpattu District - 603 209, Tamil Nadu
-          </div>
-          <div className="quote-footer-contacts">
-            <span><strong>Mobile:</strong> +91 9042988267, +91 9840226732</span>
-            <span className="quote-footer-separator">•</span>
-            <span><strong>Email:</strong> elshaddaipacking@gmail.com</span>
-          </div>
+      <div className="quote-notes-section">
+        <span>* Quote prepared from confirmed box dimensions. Final price is valid for the specification shown above. Taxes, if applicable, can be added separately.</span>
+      </div>
+
+      <div className="quote-terms-sig-section">
+        <div className="quote-terms-block">
+          <h3>TERMS & CONDITIONS:</h3>
+          <ol>
+            <li>GST charges are extra which will be added only in the bill.</li>
+            <li>GST value (5%, CGST @ 2.5% & SGST @ 2.5%).</li>
+            <li>This quotation is valid only for 7 days from the date of quotation.</li>
+            <li>Payment should be credited within immediate from the date of delivery of the pallets or boxes.</li>
+            <li>HSN Code 4415</li>
+            <li>GST No.33CCWPP5097E1Z0</li>
+          </ol>
         </div>
-        <div className="quote-footer-notes">
-          <span>• Quote prepared from confirmed box dimensions.</span>
-          <span>• Final price is valid for the specification shown above.</span>
-          <span>• Taxes, if applicable, can be added separately.</span>
+        <div className="quote-signature-block">
+          <span className="quote-sig-title">For EL SHADDAI WOOD PACKING</span>
+          <div className="quote-sig-space"></div>
+          <span className="quote-sig-name">G. PRABHU</span>
         </div>
-        <div className="quote-footer-copyright">
-          © 2026 El Shaddai Wood Packing. All Rights Reserved.
+      </div>
+
+      <footer className="quote-footer">
+        <div className="quote-footer-banner">
+          <div className="quote-footer-line">NO.75, APPUR ROAD, PANAKOTTUR, MARAIMALAI NAGAR, CHENGALPATTU DISTRICT - 603 209, TAMIL NADU</div>
+          <div className="quote-footer-line">CONTACT NUMBER: +91 91768 58100 &nbsp;&bull;&nbsp; E-mail: elshaddaipacking@gmail.com</div>
         </div>
       </footer>
     </section>

@@ -8,6 +8,7 @@ import ClientQuoteOptions from './components/BoxCalculator/ClientQuoteOptions';
 import ClientQuoteSheet from './components/BoxCalculator/ClientQuoteSheet';
 import QuoteSheet from './components/BoxCalculator/QuoteSheet';
 import PresetSelector from './components/BoxPresets/PresetSelector';
+import ClientPresetsCalculator from './components/BoxCalculator/ClientPresetsCalculator';
 
 const DEFAULT_CLIENT_QUOTE_OPTIONS = {
   showParts: false,
@@ -32,6 +33,8 @@ export default function App() {
   } = useBoxCalculator();
 
   const [isDark, setIsDark] = useState(false);
+  const [activeTab, setActiveTab] = useState('custom'); // 'custom' or 'preset'
+  const [printData, setPrintData] = useState(null);
   const [printMode, setPrintMode] = useState('detailed');
   const [isClientQuoteOpen, setIsClientQuoteOpen] = useState(false);
   const [clientQuoteOptions, setClientQuoteOptions] = useState(DEFAULT_CLIENT_QUOTE_OPTIONS);
@@ -53,8 +56,21 @@ export default function App() {
   const printQuote = (mode) => {
     setPrintMode(mode);
     window.requestAnimationFrame(() => {
-      window.setTimeout(() => window.print(), 60);
+      // 500ms allows the browser to layout and decode the 4.7MB logo image before printing
+      window.setTimeout(() => {
+        window.print();
+        // Clear preset override data after the print dialog closes
+        setPrintData(null);
+      }, 500);
     });
+  };
+
+  const handleDownloadPresetPDF = async (presetData) => {
+    setPrintData(presetData);
+    // Wait for React state update to settle
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    await downloadPDF('client');
+    setPrintData(null);
   };
 
   const downloadPDF = async (mode) => {
@@ -203,62 +219,99 @@ export default function App() {
             </button>
           </div>
 
-          <div className="flex items-center gap-3 mb-3 pr-24">
+          <div className="flex flex-wrap items-center gap-4 mb-3">
             <img
               src="/elshaddailogo.png"
-              alt="Elshaddai Logo"
-              className="w-10 h-10 object-contain rounded-xl"
-              style={{
-                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              }}
+              alt="El Shaddai Wood Packing Logo"
+              className="h-16 w-auto object-contain"
             />
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: 'var(--text-main)' }}>
-                Elshaddai <span className="text-gradient">Wood</span> Box Calculator
+            <div className="hidden sm:block h-12 w-px bg-amber-700/30 dark:bg-slate-700" />
+            <div className="flex flex-col items-start justify-center">
+              <span className="brand-ewp-text text-4xl sm:text-5xl mb-1">EWP</span>
+              <h1 className="brand-company-text text-sm sm:text-base tracking-widest uppercase">
+                EL SHADDAI WOOD PACKING
               </h1>
             </div>
           </div>
 
           <div className="glow-line mt-6 print:hidden" />
+
+          {/* Tab Navigation Segmented Control */}
+          <div className="flex justify-center mt-6 no-print">
+            <div className="tab-navigation-bar">
+              <button
+                className={`tab-navigation-btn ${activeTab === 'custom' ? 'is-active' : ''}`}
+                onClick={() => {
+                  setActiveTab('custom');
+                  setPrintData(null);
+                }}
+              >
+                Custom Box Calculator
+              </button>
+              <button
+                className={`tab-navigation-btn ${activeTab === 'preset' ? 'is-active' : ''}`}
+                onClick={() => {
+                  setActiveTab('preset');
+                  setPrintData(null);
+                }}
+              >
+                Client-Wise Presets
+              </button>
+            </div>
+          </div>
         </header>
 
         <div className="space-y-6">
-          <div className="animate-slide-up no-print" style={{ animationDelay: '0.05s', animationFillMode: 'both' }}>
-            <PresetSelector onSelect={loadPreset} />
-          </div>
+          {activeTab === 'custom' ? (
+            <>
+              <div className="animate-slide-up no-print" style={{ animationDelay: '0.05s', animationFillMode: 'both' }}>
+                <PresetSelector onSelect={loadPreset} />
+              </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="animate-slide-up" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-              <DimensionInputs dims={dims} onChange={updateDim} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="animate-slide-up" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+                  <DimensionInputs dims={dims} onChange={updateDim} />
+                </div>
+                <div className="animate-slide-up no-print" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
+                  <RateInputs rates={rates} onChange={updateRate} />
+                </div>
+              </div>
+
+              <div className="animate-slide-up no-print" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+                <PartsTable
+                  parts={result.partsWithCFT}
+                  result={result}
+                  rates={rates}
+                  onUpdatePart={updatePart}
+                  onAddPart={addCustomPart}
+                  onRemovePart={removePart}
+                  onToggleExclusion={togglePartExclusion}
+                />
+              </div>
+
+              <div className="animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'both' }}>
+                <CostSummary
+                  result={result}
+                  onPrintQuote={() => printQuote('detailed')}
+                  onDownloadPDF={() => downloadPDF('detailed')}
+                  onOpenClientQuote={() => {
+                    setPrintMode('client');
+                    setIsClientQuoteOpen(true);
+                  }}
+                />
+              </div>
+            </>
+          ) : (
+            <div className="animate-slide-up animate-fade-in">
+              <ClientPresetsCalculator
+                onPrintPreset={(presetData) => {
+                  setPrintData(presetData);
+                  printQuote('client');
+                }}
+                onDownloadPresetPDF={handleDownloadPresetPDF}
+              />
             </div>
-            <div className="animate-slide-up no-print" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
-              <RateInputs rates={rates} onChange={updateRate} />
-            </div>
-          </div>
-
-          <div className="animate-slide-up no-print" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
-            <PartsTable
-              parts={result.partsWithCFT}
-              result={result}
-              rates={rates}
-              onUpdatePart={updatePart}
-              onAddPart={addCustomPart}
-              onRemovePart={removePart}
-              onToggleExclusion={togglePartExclusion}
-            />
-          </div>
-
-          <div className="animate-slide-up" style={{ animationDelay: '0.25s', animationFillMode: 'both' }}>
-            <CostSummary
-              result={result}
-              onPrintQuote={() => printQuote('detailed')}
-              onDownloadPDF={() => downloadPDF('detailed')}
-              onOpenClientQuote={() => {
-                setPrintMode('client');
-                setIsClientQuoteOpen(true);
-              }}
-            />
-          </div>
+          )}
         </div>
 
         <footer className="mt-12 pb-6 text-center no-print">
@@ -283,11 +336,16 @@ export default function App() {
           downloadPDF('client');
         }}
       />
-      <QuoteSheet dims={dims} rates={rates} result={result} active={printMode === 'detailed'} />
+      <QuoteSheet
+        dims={printData ? printData.dims : dims}
+        rates={printData ? printData.rates : rates}
+        result={printData ? printData.result : result}
+        active={printMode === 'detailed'}
+      />
       <ClientQuoteSheet
-        dims={dims}
-        rates={rates}
-        result={result}
+        dims={printData ? printData.dims : dims}
+        rates={printData ? printData.rates : rates}
+        result={printData ? printData.result : result}
         options={clientQuoteOptions}
         active={printMode === 'client'}
       />

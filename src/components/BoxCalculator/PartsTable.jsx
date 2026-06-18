@@ -99,9 +99,8 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
                     type="number" 
                     className="table-input w-16 text-center inline-flex items-center justify-center text-xs font-semibold" 
                     style={{ 
-                      height: '1.75rem', borderRadius: '0.5rem',
-                      background: 'var(--card-inner-bg)', color: 'var(--text-main)',
-                      border: '1px solid transparent'
+                      height: '1.75rem',
+                      color: 'var(--text-main)',
                     }}
                     value={p.qty === 0 ? '' : p.qty} 
                     onChange={(e) => onUpdatePart(i, 'qty', e.target.value)}
