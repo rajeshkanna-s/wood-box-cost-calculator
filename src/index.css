@@ -394,7 +394,7 @@
   .brand-ewp-text {
     font-family: 'Georgia', 'Times New Roman', serif !important;
     font-weight: 800;
-    line-height: 0.95;
+    line-height: 1.1;
     text-transform: uppercase;
     background: linear-gradient(to bottom, #113f67 20%, #70a13a 90%);
     -webkit-background-clip: text;
@@ -526,8 +526,8 @@
 
   .quote-ewp-title {
     font-size: 38px !important;
-    line-height: 0.9 !important;
-    margin: 0 0 2px 0 !important;
+    line-height: 1.1 !important;
+    margin: 0 0 6px 0 !important;
     background: none !important;
     -webkit-background-clip: initial !important;
     -webkit-text-fill-color: initial !important;
@@ -538,8 +538,8 @@
   .quote-company-name {
     font-size: 15px !important;
     letter-spacing: 0.08em !important;
-    line-height: 1.1 !important;
-    margin: 0 !important;
+    line-height: 1.25 !important;
+    margin: 0 0 4px 0 !important;
   }
 
   .quote-brand-sub {
@@ -548,7 +548,7 @@
     font-family: 'Playfair Display', 'Brush Script MT', 'Lucida Handwriting', cursive, Georgia, serif;
     font-style: italic;
     font-weight: 600;
-    margin: 3px 0 0 0 !important;
+    margin: 0 !important;
   }
 
   .quote-header-divider {
