@@ -154,8 +154,12 @@ export default function App() {
         font-family: 'Inter', Arial, sans-serif !important;
       }
       .pdf-export-container .quote-sheet {
-        display: block !important;
-        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        width: 794px !important;
+        height: 1120px !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
       }
       .pdf-export-container .no-print {
         display: none !important;

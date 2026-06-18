@@ -477,11 +477,13 @@
     display: none !important;
     width: 100%;
     color: #334155;
-    font-size: 12px;
-    line-height: 1.4;
-    padding: 16px 24px;
+    font-size: 10px;
+    line-height: 1.35;
+    padding: 10px 16px;
     box-sizing: border-box;
     height: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden !important;
     flex-direction: column;
     background: #ffffff !important;
   }
@@ -501,19 +503,19 @@
     display: flex;
     justify-content: flex-start;
     align-items: center;
-    padding-bottom: 6px;
+    padding-bottom: 4px;
     width: 100%;
   }
 
   .quote-brand-container {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
   }
 
   .quote-brand-logo {
     display: block;
-    height: 56px;
+    height: 48px;
     width: auto;
     object-fit: contain;
   }
@@ -525,9 +527,9 @@
   }
 
   .quote-ewp-title {
-    font-size: 38px !important;
+    font-size: 30px !important;
     line-height: 1.1 !important;
-    margin: 0 0 6px 0 !important;
+    margin: 0 0 2px 0 !important;
     background: none !important;
     -webkit-background-clip: initial !important;
     -webkit-text-fill-color: initial !important;
@@ -536,15 +538,15 @@
   }
 
   .quote-company-name {
-    font-size: 15px !important;
-    letter-spacing: 0.08em !important;
-    line-height: 1.25 !important;
-    margin: 0 0 4px 0 !important;
+    font-size: 13px !important;
+    letter-spacing: 0.06em !important;
+    line-height: 1.2 !important;
+    margin: 0 0 2px 0 !important;
   }
 
   .quote-brand-sub {
     color: #475569 !important;
-    font-size: 11px !important;
+    font-size: 9px !important;
     font-family: 'Playfair Display', 'Brush Script MT', 'Lucida Handwriting', cursive, Georgia, serif;
     font-style: italic;
     font-weight: 600;
@@ -554,7 +556,7 @@
   .quote-header-divider {
     height: 2px;
     background-color: #1e3a8a;
-    margin: 4px 0 8px 0;
+    margin: 2px 0 6px 0;
     width: 100%;
   }
 
@@ -563,7 +565,7 @@
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 12px;
+    margin-bottom: 6px;
   }
 
   .quote-meta-left {
@@ -582,7 +584,7 @@
   .quote-doc-type {
     margin: 0 0 2px 0;
     color: #1e3a8a;
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 900;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -592,7 +594,7 @@
   .quote-meta-item {
     display: flex;
     gap: 6px;
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1;
   }
 
@@ -611,15 +613,15 @@
   .quote-summary-grid {
     display: grid;
     grid-template-columns: 1.15fr 0.85fr 1fr;
-    gap: 8px;
+    gap: 6px;
     margin-top: 0px;
   }
 
   .quote-body-grid {
     display: grid;
     grid-template-columns: 1.3fr 0.9fr;
-    gap: 8px;
-    margin-top: 8px;
+    gap: 6px;
+    margin-top: 6px;
     align-items: start;
   }
 
@@ -634,24 +636,24 @@
     border: 1px solid #e2e8f0;
     border-radius: 6px;
     background: #ffffff;
-    padding: 8px 10px;
+    padding: 5px 8px;
   }
 
   .quote-panel h2 {
-    margin: 0 0 6px;
+    margin: 0 0 4px;
     color: #1e3a8a;
-    font-size: 11px;
+    font-size: 9.5px;
     font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     border-bottom: 2px solid #e2e8f0;
-    padding-bottom: 4px;
+    padding-bottom: 2px;
   }
 
   .quote-spec-list,
   .quote-kpi-list {
     display: grid;
-    gap: 4px;
+    gap: 2px;
     margin: 0;
   }
 
@@ -662,7 +664,7 @@
     justify-content: space-between;
     gap: 12px;
     border-bottom: 1px solid #f1f5f9;
-    padding-bottom: 4px;
+    padding-bottom: 2px;
   }
 
   .quote-spec-list div:last-child,
@@ -674,7 +676,7 @@
   .quote-spec-list dt,
   .quote-kpi-list dt {
     color: #64748b;
-    font-size: 9.5px;
+    font-size: 8.5px;
     font-weight: 700;
     text-transform: uppercase;
   }
@@ -684,7 +686,7 @@
     margin: 0;
     color: #0f172a;
     font-family: 'JetBrains Mono', Consolas, monospace;
-    font-size: 10.5px;
+    font-size: 9.5px;
     font-weight: 800;
     text-align: right;
   }
@@ -692,7 +694,7 @@
   .quote-emphasis-row dt,
   .quote-emphasis-row dd {
     color: #2563eb !important;
-    font-size: 11.5px;
+    font-size: 10.5px;
     font-weight: 900;
   }
 
@@ -706,11 +708,11 @@
     border-radius: 6px;
     background: #f8fafc;
     border: 2px solid #3b82f6;
-    padding: 10px 12px;
+    padding: 6px 10px;
   }
 
   .quote-total-label {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -725,7 +727,7 @@
     margin-top: 4px;
     color: #1e3a8a;
     font-family: 'JetBrains Mono', Consolas, monospace;
-    font-size: 24px;
+    font-size: 20px;
     font-weight: 900;
     line-height: 1.1;
   }
@@ -744,9 +746,9 @@
   }
 
   .quote-total-panel small {
-    margin-top: 4px;
+    margin-top: 2px;
     color: #64748b;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 600;
   }
 
@@ -754,13 +756,13 @@
   .quote-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 11px;
+    font-size: 9.5px;
   }
 
   .quote-table th,
   .quote-table td {
     border-bottom: 1px solid #e2e8f0;
-    padding: 5px 4px;
+    padding: 3px 4px;
     vertical-align: middle;
   }
 
@@ -825,13 +827,13 @@
 
   .quote-billable-row + tr th,
   .quote-billable-row + tr td {
-    padding-top: 8px;
+    padding-top: 4px;
   }
 
   .quote-subtotal-row th,
   .quote-subtotal-row td {
     border-top: 1px solid #cbd5e1;
-    padding-top: 8px;
+    padding-top: 4px;
   }
 
   .quote-grand-row th,
@@ -839,35 +841,35 @@
     border-top: 2px solid #1e3a8a;
     border-bottom: 2px double #1e3a8a;
     color: #1e3a8a;
-    font-size: 12.5px;
+    font-size: 11px;
     font-weight: 900;
-    padding-top: 8px;
-    padding-bottom: 8px;
+    padding-top: 4px;
+    padding-bottom: 4px;
   }
 
   .quote-rate-note {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 8px;
+    gap: 3px;
+    margin-top: 4px;
     border-radius: 4px;
     background: #eff6ff;
     color: #1e40af;
-    font-size: 10px;
+    font-size: 8.5px;
     font-weight: 800;
-    padding: 6px 8px;
+    padding: 4px 6px;
     border: 1px solid #bfdbfe;
   }
 
   /* Notes Row */
   .quote-notes-section {
-    margin-top: 10px;
-    font-size: 9px;
+    margin-top: 4px;
+    font-size: 8px;
     color: #64748b;
     font-style: italic;
-    line-height: 1.4;
+    line-height: 1.3;
     border-top: 1px dashed #e2e8f0;
-    padding-top: 4px;
+    padding-top: 2px;
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -876,8 +878,8 @@
   .quote-terms-sig-section {
     display: grid;
     grid-template-columns: 1.35fr 0.65fr;
-    gap: 16px;
-    margin-top: 10px;
+    gap: 12px;
+    margin-top: 4px;
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -888,24 +890,24 @@
   }
 
   .quote-terms-block h3 {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 800;
     color: #1e3a8a;
-    margin: 0 0 4px 0;
+    margin: 0 0 2px 0;
     letter-spacing: 0.05em;
     text-transform: uppercase;
   }
 
   .quote-terms-block ol {
     margin: 0;
-    padding-left: 14px;
-    font-size: 9.5px;
-    line-height: 1.35;
+    padding-left: 12px;
+    font-size: 8.5px;
+    line-height: 1.25;
     color: #334155;
   }
 
   .quote-terms-block ol li {
-    margin-bottom: 2px;
+    margin-bottom: 1px;
   }
 
   .quote-signature-block {
@@ -917,7 +919,7 @@
   }
 
   .quote-sig-title {
-    font-size: 9.5px;
+    font-size: 8.5px;
     font-weight: 800;
     color: #1e3a8a;
     letter-spacing: 0.02em;
@@ -925,16 +927,16 @@
   }
 
   .quote-sig-space {
-    height: 28px;
+    height: 12px;
   }
 
   .quote-sig-name {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 800;
     color: #0f172a;
     border-top: 1px solid #94a3b8;
-    padding-top: 4px;
-    width: 140px;
+    padding-top: 2px;
+    width: 120px;
     text-align: center;
     text-transform: uppercase;
   }
@@ -945,7 +947,7 @@
     flex-direction: column;
     gap: 4px;
     margin-top: auto;
-    padding-top: 10px;
+    padding-top: 4px;
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -953,7 +955,7 @@
   .quote-footer-banner {
     background: #1e3a8a;
     color: #ffffff;
-    padding: 6px 10px;
+    padding: 4px 8px;
     text-align: center;
     border-radius: 4px;
     display: flex;
@@ -963,16 +965,16 @@
   }
 
   .quote-footer-line {
-    font-size: 8.5px;
+    font-size: 8px;
     letter-spacing: 0.03em;
-    line-height: 1.3;
+    line-height: 1.2;
     color: #ffffff !important;
     font-weight: 700;
   }
 
   .quote-footer-copyright {
     text-align: center;
-    font-size: 8px;
+    font-size: 7.5px;
     color: #64748b;
     font-weight: 700;
     letter-spacing: 0.05em;
@@ -984,20 +986,20 @@
   .client-quote-hero {
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
-    gap: 10px;
+    gap: 8px;
   }
 
   .client-dimension-panel {
     display: flex;
-    min-height: 20mm;
+    min-height: 15mm;
     flex-direction: column;
     justify-content: center;
   }
 
   .quote-client-kicker {
-    margin: 0 0 4px;
+    margin: 0 0 2px;
     color: #1e3a8a;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 900;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -1006,43 +1008,43 @@
   .client-dimension-panel strong {
     color: #0f172a;
     font-family: 'JetBrains Mono', Consolas, monospace;
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 900;
     line-height: 1.1;
   }
 
   .client-dimension-panel span {
-    margin-top: 4px;
+    margin-top: 2px;
     color: #334155;
     font-family: 'JetBrains Mono', Consolas, monospace;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: 800;
   }
 
   .client-dimension-panel small {
-    margin-top: 4px;
+    margin-top: 2px;
     color: #64748b;
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
   }
 
   .client-total-panel {
-    min-height: 20mm;
+    min-height: 15mm;
   }
 
   .client-total-panel .quote-total-label {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .client-total-panel .quote-total-amount {
-    font-size: 26px;
+    font-size: 22px;
   }
 
   .client-detail-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
-    margin-top: 8px;
+    margin-top: 6px;
     align-items: start;
   }
 
@@ -1051,65 +1053,63 @@
   }
 
   .client-parts-panel {
-    margin-top: 8px;
+    margin-top: 6px;
   }
 
   .quote-sheet-client {
-    padding: 12px 20px !important;
+    padding: 10px 16px !important;
   }
 
   .quote-sheet-client .quote-panel {
-    padding: 6px 8px !important;
+    padding: 5px 8px !important;
   }
 
   .quote-sheet-client .quote-panel h2 {
-    margin-bottom: 4px !important;
+    margin-bottom: 3px !important;
     padding-bottom: 2px !important;
-    font-size: 10px !important;
+    font-size: 9.5px !important;
   }
 
   .quote-sheet-client .client-dimension-panel,
   .quote-sheet-client .client-total-panel {
-    padding: 6px 10px !important;
-    min-height: 15mm !important;
+    padding: 5px 8px !important;
+    min-height: 12mm !important;
   }
 
   .quote-sheet-client .client-dimension-panel strong {
-    font-size: 18px !important;
+    font-size: 16px !important;
   }
 
   .quote-sheet-client .client-dimension-panel span {
-    font-size: 11px !important;
-    margin-top: 2px !important;
+    font-size: 10px !important;
   }
 
   .quote-sheet-client .client-dimension-panel small {
-    font-size: 9px !important;
-    margin-top: 2px !important;
+    font-size: 8.5px !important;
   }
 
   .quote-sheet-client .client-total-panel .quote-total-amount {
-    font-size: 22px !important;
+    font-size: 20px !important;
   }
 
   .quote-sheet-client .client-total-panel .quote-total-label {
-    font-size: 9.5px !important;
+    font-size: 8.5px !important;
   }
 
   .quote-sheet-client .quote-table {
-    font-size: 10px !important;
+    font-size: 9.5px !important;
   }
 
   .quote-sheet-client .quote-table th,
   .quote-sheet-client .quote-table td {
-    padding: 3px 4px !important;
+    padding: 2.5px 4px !important;
   }
 
   .quote-sheet-client .quote-grand-row th,
   .quote-sheet-client .quote-grand-row td {
-    font-size: 11px !important;
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
+    font-size: 10.5px !important;
+    padding-top: 3px !important;
+    padding-bottom: 3px !important;
   }
 
   .quote-sheet-client .quote-notes-section {
@@ -1118,11 +1118,11 @@
 
   .quote-sheet-client .quote-terms-sig-section {
     margin-top: 4px !important;
-    gap: 12px !important;
+    gap: 10px !important;
   }
 
   .quote-sheet-client .quote-sig-space {
-    height: 12px !important;
+    height: 10px !important;
   }
 }
 
