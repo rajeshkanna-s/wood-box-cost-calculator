@@ -201,9 +201,24 @@ export default function ClientQuoteSheet({ dims, rates, result, options, active 
       )}
 
       <footer className="quote-footer client-quote-footer">
-        <span>• Quote prepared from confirmed box dimensions.</span>
-        <span>• Final price is valid for the specification shown above.</span>
-        <span>• Taxes, if applicable, can be added separately.</span>
+        <div className="quote-footer-info">
+          <div className="quote-footer-address">
+            No.75, Appur Road, Panakottur, Maraimalai Nagar, Chengalpattu District - 603 209, Tamil Nadu
+          </div>
+          <div className="quote-footer-contacts">
+            <span><strong>Mobile:</strong> +91 9042988267, +91 9840226732</span>
+            <span className="quote-footer-separator">•</span>
+            <span><strong>Email:</strong> elshaddaipacking@gmail.com</span>
+          </div>
+        </div>
+        <div className="quote-footer-notes">
+          <span>• Quote prepared from confirmed box dimensions.</span>
+          <span>• Final price is valid for the specification shown above.</span>
+          <span>• Taxes, if applicable, can be added separately.</span>
+        </div>
+        <div className="quote-footer-copyright">
+          © 2026 El Shaddai Wood Packing. All Rights Reserved.
+        </div>
       </footer>
     </section>
   );

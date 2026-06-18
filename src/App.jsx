@@ -264,7 +264,7 @@ export default function App() {
         <footer className="mt-12 pb-6 text-center no-print">
           <div className="glow-line mb-6" />
           <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-            @Copyright Elshaddai
+            © 2026 El Shaddai Wood Packing. All Rights Reserved.
           </p>
         </footer>
       </div>

@@ -784,14 +784,57 @@
 
   .quote-footer {
     display: flex;
-    flex-wrap: wrap;
-    gap: 6px 12px;
-    margin-top: 12px;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 24px;
     border-top: 1px solid #e5e7eb;
-    padding-top: 9px;
-    color: #6b7280;
-    font-size: 9.8px;
+    padding-top: 12px;
+    font-size: 9.5px;
+    line-height: 1.4;
+  }
+
+  .quote-footer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px 12px;
+  }
+
+  .quote-footer-address {
+    font-weight: 500;
+    color: #334155;
+  }
+
+  .quote-footer-contacts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    align-items: center;
+    color: #475569;
+  }
+
+  .quote-footer-separator {
+    color: #cbd5e1;
+  }
+
+  .quote-footer-notes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .quote-footer-copyright {
+    text-align: center;
+    font-size: 9px;
+    color: #94a3b8;
     font-weight: 700;
+    margin-top: 4px;
+    letter-spacing: 0.01em;
   }
 
   .client-quote-header {
