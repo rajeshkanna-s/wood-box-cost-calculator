@@ -204,17 +204,14 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3 mb-3 pr-24">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
+            <img
+              src="/elshaddailogo.png"
+              alt="Elshaddai Logo"
+              className="w-10 h-10 object-contain rounded-xl"
               style={{
-                background: 'linear-gradient(135deg, #e89c3f 0%, #d26a17 100%)',
-                boxShadow: '0 4px 12px rgba(232,156,63,0.2)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
               }}
-            >
-              <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-            </div>
+            />
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight" style={{ color: 'var(--text-main)' }}>
                 Elshaddai <span className="text-gradient">Wood</span> Box Calculator

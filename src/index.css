@@ -470,15 +470,11 @@
     gap: 14px;
   }
 
-  .quote-brand-mark {
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  .quote-brand-logo {
+    display: block;
     width: 52px;
     height: 52px;
-    border-radius: 10px;
-    background: #d26a17;
-    color: #ffffff;
+    object-fit: contain;
   }
 
   .quote-brand-text {
