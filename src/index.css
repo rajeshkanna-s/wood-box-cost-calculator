@@ -528,6 +528,11 @@
     font-size: 38px !important;
     line-height: 0.9 !important;
     margin: 0 0 2px 0 !important;
+    background: none !important;
+    -webkit-background-clip: initial !important;
+    -webkit-text-fill-color: initial !important;
+    background-clip: initial !important;
+    color: #113f67 !important;
   }
 
   .quote-company-name {
