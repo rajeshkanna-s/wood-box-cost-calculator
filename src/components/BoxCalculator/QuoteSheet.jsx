@@ -189,7 +189,7 @@ export default function QuoteSheet({
               <h2>Wood Summary</h2>
               <dl className="quote-kpi-list">
                 <div>
-                  <dt>Net CFT</dt>
+                  <dt>Net {wRates.rateUnit || 'CFT'}</dt>
                   <dd>{formatCFT(wResult.totalCFT)}</dd>
                 </div>
                 <div>
@@ -197,7 +197,7 @@ export default function QuoteSheet({
                   <dd>{formatCFT(wResult.vestCFT)}</dd>
                 </div>
                 <div className="quote-emphasis-row">
-                  <dt>Billable CFT</dt>
+                  <dt>Billable {wRates.rateUnit || 'CFT'}</dt>
                   <dd>{formatCFT(wResult.billable)}</dd>
                 </div>
               </dl>
@@ -221,7 +221,7 @@ export default function QuoteSheet({
               <h2>Plywood Summary</h2>
               <dl className="quote-kpi-list">
                 <div>
-                  <dt>Net CFT</dt>
+                  <dt>Net {pRates.rateUnit || 'CFT'}</dt>
                   <dd>{formatCFT(pResult.totalCFT)}</dd>
                 </div>
                 <div>
@@ -229,7 +229,7 @@ export default function QuoteSheet({
                   <dd>{formatCFT(pResult.vestCFT)}</dd>
                 </div>
                 <div className="quote-emphasis-row">
-                  <dt>Billable CFT</dt>
+                  <dt>Billable {pRates.rateUnit || 'CFT'}</dt>
                   <dd>{formatCFT(pResult.billable)}</dd>
                 </div>
               </dl>
