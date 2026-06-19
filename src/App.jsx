@@ -446,7 +446,7 @@ export default function App() {
               <div className="animate-slide-up" style={{ animationDelay: '0.24s', animationFillMode: 'both' }}>
                 <CostSummary
                   result={result}
-                  rates={woodRates}
+                  rates={useWood ? woodRates : plyRates}
                   useWood={useWood}
                   usePly={usePly}
                   woodResult={woodResult}
@@ -503,8 +503,8 @@ export default function App() {
         }}
       />
       <QuoteSheet
-        dims={printData ? printData.dims : woodDims}
-        rates={printData ? printData.rates : woodRates}
+        dims={printData ? printData.dims : (useWood ? woodDims : plyDims)}
+        rates={printData ? printData.rates : (useWood ? woodRates : plyRates)}
         result={printData ? printData.result : result}
         clientName={printData ? printData.clientName : customClientName}
         active={printMode === 'detailed'}
@@ -518,8 +518,8 @@ export default function App() {
         plyResult={printData ? printData.ply : plyResult}
       />
       <ClientQuoteSheet
-        dims={printData ? printData.dims : woodDims}
-        rates={printData ? printData.rates : woodRates}
+        dims={printData ? printData.dims : (useWood ? woodDims : plyDims)}
+        rates={printData ? printData.rates : (useWood ? woodRates : plyRates)}
         result={printData ? printData.result : result}
         clientName={printData ? printData.clientName : customClientName}
         options={clientQuoteOptions}
@@ -536,8 +536,8 @@ export default function App() {
       <QuotePreviewModal
         isOpen={isPreviewOpen}
         mode={previewMode}
-        dims={printData ? printData.dims : woodDims}
-        rates={printData ? printData.rates : woodRates}
+        dims={printData ? printData.dims : (useWood ? woodDims : plyDims)}
+        rates={printData ? printData.rates : (useWood ? woodRates : plyRates)}
         result={printData ? printData.result : result}
         clientName={printData ? printData.clientName : customClientName}
         options={clientQuoteOptions}

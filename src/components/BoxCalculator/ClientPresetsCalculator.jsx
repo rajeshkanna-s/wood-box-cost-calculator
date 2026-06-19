@@ -174,8 +174,8 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
   // Prepares data payload for preview and print
   const getPresetDataPayload = () => {
     return {
-      dims: calc.woodDims,
-      rates: calc.woodRates,
+      dims: calc.useWood ? calc.woodDims : calc.plyDims,
+      rates: calc.useWood ? calc.woodRates : calc.plyRates,
       result: combinedResult,
       clientName: company.companyName,
       useWood: calc.useWood,
@@ -445,7 +445,7 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
       {/* Cost Summary (matches Custom Calculator) */}
       <CostSummary
         result={combinedResult}
-        rates={calc.woodRates}
+        rates={calc.useWood ? calc.woodRates : calc.plyRates}
         useWood={calc.useWood}
         usePly={calc.usePly}
         woodResult={woodResultOverridden}
