@@ -11,16 +11,29 @@ export function useBoxCalculator(initialDims = { l: 75, w: 35, h: 35, unit: 'in'
 
   const [woodDims, setWoodDims] = useState(initialDims);
   const [woodRates, setWoodRates] = useState(DEFAULT_RATES);
-  const [woodParts, setWoodParts] = useState(() => buildParts(initialDims.l, initialDims.w, initialDims.h));
+  const [woodParts, setWoodParts] = useState(() => {
+    const lInches = convertToInches(initialDims.l, initialDims.unit || 'in');
+    const wInches = convertToInches(initialDims.w, initialDims.unit || 'in');
+    const hInches = convertToInches(initialDims.h, initialDims.unit || 'in');
+    return buildParts(lInches, wInches, hInches);
+  });
 
-  const [plyDims, setPlyDims] = useState(() => ({
-    unit: 'mm',
-    l: Number((initialDims.l * 25.4).toFixed(2)),
-    w: Number((initialDims.w * 25.4).toFixed(2)),
-    h: Number((initialDims.h * 25.4).toFixed(2)),
-  }));
+  const [plyDims, setPlyDims] = useState(() => {
+    const isMm = initialDims.unit === 'mm';
+    return {
+      unit: 'mm',
+      l: isMm ? initialDims.l : Number((initialDims.l * 25.4).toFixed(2)),
+      w: isMm ? initialDims.w : Number((initialDims.w * 25.4).toFixed(2)),
+      h: isMm ? initialDims.h : Number((initialDims.h * 25.4).toFixed(2)),
+    };
+  });
   const [plyRates, setPlyRates] = useState(() => ({ ...DEFAULT_RATES, rateUnit: 'CFT' }));
-  const [plyParts, setPlyParts] = useState(() => buildParts(initialDims.l, initialDims.w, initialDims.h));
+  const [plyParts, setPlyParts] = useState(() => {
+    const lInches = convertToInches(initialDims.l, initialDims.unit || 'in');
+    const wInches = convertToInches(initialDims.w, initialDims.unit || 'in');
+    const hInches = convertToInches(initialDims.h, initialDims.unit || 'in');
+    return buildParts(lInches, wInches, hInches);
+  });
 
   const skipWoodPartsRegen = useRef(false);
 

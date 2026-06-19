@@ -103,6 +103,38 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
       }
     }
   };
+  const handleWoodDimChange = (key, val) => {
+    setUseNegotiatedPrice(false);
+    calc.updateWoodDim(key, val);
+  };
+
+  const handleWoodUnitChange = (unit) => {
+    setUseNegotiatedPrice(false);
+    calc.changeWoodUnit(unit);
+  };
+
+  const handleWoodPartUpdate = (idx, fld, val) => {
+    setUseNegotiatedPrice(false);
+    calc.updatePart('wood', idx, fld, val);
+  };
+
+  const handleWoodPartAdd = () => {
+    setUseNegotiatedPrice(false);
+    calc.addCustomPart('wood');
+  };
+
+  const handleWoodPartRemove = (idx) => {
+    setUseNegotiatedPrice(false);
+    calc.removePart('wood', idx);
+  };
+
+  const handleWoodPartToggleExclusion = (idx) => {
+    setUseNegotiatedPrice(false);
+    calc.togglePartExclusion('wood', idx);
+  };
+
+
+
 
 
   // Overridden Wood calculation result when negotiated price is active
@@ -311,8 +343,8 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
               <div className="flex-1">
                 <DimensionInputs
                   dims={calc.woodDims}
-                  onChange={calc.updateWoodDim}
-                  onUnitChange={calc.changeWoodUnit}
+                  onChange={handleWoodDimChange}
+                  onUnitChange={handleWoodUnitChange}
                   showPresetSelector={false}
                 />
               </div>
@@ -382,10 +414,10 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
                 parts={woodResultOverridden.partsWithCFT || []}
                 result={woodResultOverridden}
                 rates={calc.woodRates}
-                onUpdatePart={(idx, fld, val) => calc.updatePart('wood', idx, fld, val)}
-                onAddPart={() => calc.addCustomPart('wood')}
-                onRemovePart={(idx) => calc.removePart('wood', idx)}
-                onToggleExclusion={(idx) => calc.togglePartExclusion('wood', idx)}
+                onUpdatePart={handleWoodPartUpdate}
+                onAddPart={handleWoodPartAdd}
+                onRemovePart={handleWoodPartRemove}
+                onToggleExclusion={handleWoodPartToggleExclusion}
                 compact={calc.useWood && calc.usePly}
               />
             </div>
