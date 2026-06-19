@@ -4,7 +4,15 @@ import PresetSelector from '../BoxPresets/PresetSelector';
 import { inchToMm, convertToInches, convertFromInches } from '../../engine/cft';
 import { getReperType } from '../../engine/parts';
 
-export default function DimensionInputs({ dims, onChange, onUnitChange, showPresetSelector = false, onSelectPreset, isPlywood = false }) {
+export default function DimensionInputs({
+  dims,
+  onChange,
+  onUnitChange,
+  showPresetSelector = false,
+  onSelectPreset,
+  isPlywood = false,
+  customPresetSelector = null
+}) {
   const currentUnit = dims.unit || 'in';
   
   // Convert current dimensions to inches to figure out Reper Type
@@ -62,12 +70,18 @@ export default function DimensionInputs({ dims, onChange, onUnitChange, showPres
       <div className="p-5 flex-1 flex flex-col">
         {/* Input fields */}
         <div className="space-y-1" style={{ borderBottom: 'none' }}>
-          {showPresetSelector && (
+          {(showPresetSelector || customPresetSelector) && (
             <>
               <div className="flex items-center justify-between py-2 px-1 gap-4">
-                <span className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>Select Box Size:</span>
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>
+                  {isPlywood ? 'Select Box Size:' : 'Select Negotiated Product:'}
+                </span>
                 <div className="flex-1 max-w-[60%]">
-                  <PresetSelector compact={true} onSelect={onSelectPreset} isPlywood={isPlywood} />
+                  {customPresetSelector ? (
+                    customPresetSelector
+                  ) : (
+                    <PresetSelector compact={true} onSelect={onSelectPreset} isPlywood={isPlywood} />
+                  )}
                 </div>
               </div>
               <div style={{ borderTop: '1px solid var(--table-border)', marginBottom: '0.25rem' }} />

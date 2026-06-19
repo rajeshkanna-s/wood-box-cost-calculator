@@ -195,7 +195,7 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
     <div className="space-y-6">
       {/* Selectors Card */}
       <div className="glass-card p-5 animate-fade-in">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
           <div className="flex flex-col gap-2">
             <label htmlFor="company-select" className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
               Select Client / Company
@@ -212,29 +212,6 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
                 </option>
               ))}
               <option value="other">Other (Custom Client)</option>
-            </select>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <label htmlFor="preset-product-select" className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
-              Select Negotiated Product
-            </label>
-            <select
-              id="preset-product-select"
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
-              className="premium-select"
-              disabled={selectedCompanyId === 'other'}
-            >
-              {selectedCompanyId === 'other' ? (
-                <option value="custom-product">Custom Product</option>
-              ) : (
-                company.products.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} ({p.sizeLabel})
-                  </option>
-                ))
-              )}
             </select>
           </div>
 
@@ -265,7 +242,7 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
           </div>
 
           {selectedCompanyId === 'other' && (
-            <div className="flex flex-col gap-2 animate-fade-in md:col-span-3">
+            <div className="flex flex-col gap-2 animate-fade-in md:col-span-2">
               <label htmlFor="custom-company-name" className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                 Enter Custom Client Name
               </label>
@@ -346,6 +323,26 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
                   onChange={handleWoodDimChange}
                   onUnitChange={handleWoodUnitChange}
                   showPresetSelector={false}
+                  customPresetSelector={
+                    <select
+                      id="preset-product-select"
+                      value={selectedProductId}
+                      onChange={(e) => setSelectedProductId(e.target.value)}
+                      className="premium-select w-full"
+                      disabled={selectedCompanyId === 'other'}
+                      style={{ padding: '0.4rem 0.75rem', fontSize: '0.8125rem' }}
+                    >
+                      {selectedCompanyId === 'other' ? (
+                        <option value="custom-product">Custom Product</option>
+                      ) : (
+                        company.products.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name} ({p.sizeLabel})
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  }
                 />
               </div>
             </div>
