@@ -1,10 +1,11 @@
 import React from 'react';
 
 const formatINR = (n) =>
-  n.toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+  Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
 
 const costLineIcons = {
   'Wood Cost': 'W',
+  'Plywood Cost': 'P',
   Labour: 'L',
   Nails: 'N',
   Transport: 'T',
@@ -12,17 +13,72 @@ const costLineIcons = {
   Clamp: 'C',
 };
 
-export default function CostSummary({ result, onPrintQuote, onDownloadPDF, onOpenClientQuote }) {
-  const costLines = [
-    { label: 'Wood Cost', value: result.woodCost },
-    { label: 'Labour', value: result.labourCost },
-    { label: 'Nails', value: result.nailCost },
-    { label: 'Transport', value: result.transportCost },
-    { label: 'Packing Cover', value: result.packingCost },
-    { label: 'Clamp', value: result.clampCost },
-  ];
+export default function CostSummary({
+  result,
+  rates,
+  useWood = true,
+  usePly = false,
+  woodResult,
+  plyResult,
+  onPrintQuote,
+  onDownloadPDF,
+  onOpenClientQuote
+}) {
+  const isCombined = useWood && usePly && woodResult && plyResult;
 
-  const maxCost = Math.max(...costLines.map(c => c.value));
+  const costLines = !isCombined
+    ? [
+        { label: useWood ? 'Wood Cost' : 'Plywood Cost', value: result.woodCost },
+        { label: 'Labour', value: result.labourCost },
+        { label: 'Nails', value: result.nailCost },
+        { label: 'Transport', value: result.transportCost },
+        { label: 'Packing Cover', value: result.packingCost },
+        { label: 'Clamp', value: result.clampCost },
+      ]
+    : [];
+
+  const maxCost = !isCombined ? Math.max(...costLines.map(c => c.value)) : 0;
+
+  const combinedCostItems = isCombined
+    ? [
+        {
+          label: 'Material Cost',
+          wVal: woodResult.woodCost,
+          pVal: plyResult.woodCost,
+          combVal: woodResult.woodCost + plyResult.woodCost
+        },
+        {
+          label: 'Labour',
+          wVal: woodResult.labourCost,
+          pVal: plyResult.labourCost,
+          combVal: woodResult.labourCost + plyResult.labourCost
+        },
+        {
+          label: 'Nails',
+          wVal: woodResult.nailCost,
+          pVal: plyResult.nailCost,
+          combVal: woodResult.nailCost + plyResult.nailCost
+        },
+        {
+          label: 'Transport',
+          wVal: woodResult.transportCost,
+          pVal: plyResult.transportCost,
+          combVal: woodResult.transportCost + plyResult.transportCost
+        },
+        {
+          label: 'Packing Cover',
+          wVal: woodResult.packingCost,
+          pVal: plyResult.packingCost,
+          combVal: woodResult.packingCost + plyResult.packingCost
+        },
+        {
+          label: 'Clamp',
+          wVal: woodResult.clampCost,
+          pVal: plyResult.clampCost,
+          combVal: woodResult.clampCost + plyResult.clampCost
+        },
+      ]
+    : [];
 
   return (
     <div className="glass-card print-friendly-card">
@@ -36,53 +92,98 @@ export default function CostSummary({ result, onPrintQuote, onDownloadPDF, onOpe
           <h2 className="section-title">Cost Breakdown</h2>
         </div>
         <span className="text-xs font-mono" style={{ color: 'var(--text-light)' }}>
-          ₹/CFT × Billable
+          {isCombined ? 'Pine Wood + Plywood Combined' : `₹/${rates?.rateUnit || 'CFT'} × Billable`}
         </span>
       </div>
 
-      <div className="p-6 space-y-4 no-print">
-        {costLines.map(({ label, value }) => (
-          <div key={label} className="group">
-            <div className="flex items-center justify-between mb-1.5">
-              <div className="flex items-center gap-2.5">
-                <span
-                  className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.65rem] font-bold"
-                  style={{ background: 'var(--card-inner-bg)', color: 'var(--accent-wood)' }}
-                  aria-hidden="true"
-                >
-                  {costLineIcons[label]}
-                </span>
-                <span className="text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>{label}</span>
-              </div>
-              <span className="font-mono text-sm font-medium" style={{ color: 'var(--text-main)' }}>₹ {formatINR(value)}</span>
-            </div>
-            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--card-inner-bg)' }}>
-              <div
-                className="h-full rounded-full"
-                style={{
-                  width: `${maxCost > 0 ? (value / maxCost) * 100 : 0}%`,
-                  background: 'linear-gradient(90deg, var(--accent-wood-light), var(--accent-wood))',
-                  transition: 'width 0.5s ease-out',
-                }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+      {isCombined ? (
+        /* Multi-column combined table layout */
+        <div className="p-6 space-y-4 no-print overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[500px]">
+            <thead>
+              <tr className="border-b" style={{ borderColor: 'var(--table-border)' }}>
+                <th className="pb-3 text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Cost Item</th>
+                <th className="pb-3 text-right text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Pine Wood</th>
+                <th className="pb-3 text-right text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Plywood</th>
+                <th className="pb-3 text-right text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Combined</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y" style={{ borderColor: 'var(--table-border)' }}>
+              {combinedCostItems.map(({ label, wVal, pVal, combVal }) => (
+                <tr key={label} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
+                  <td className="py-2.5 text-sm font-medium" style={{ color: 'var(--text-muted)' }}>{label}</td>
+                  <td className="py-2.5 text-right font-mono text-sm" style={{ color: 'var(--text-main)' }}>₹ {formatINR(wVal)}</td>
+                  <td className="py-2.5 text-right font-mono text-sm" style={{ color: 'var(--text-main)' }}>₹ {formatINR(pVal)}</td>
+                  <td className="py-2.5 text-right font-mono text-sm font-semibold" style={{ color: 'var(--accent-wood-light)' }}>₹ {formatINR(combVal)}</td>
+                </tr>
+              ))}
+              
+              {/* Subtotal */}
+              <tr className="border-t font-semibold" style={{ borderColor: 'var(--table-border)' }}>
+                <td className="py-3 text-sm" style={{ color: 'var(--text-main)' }}>Subtotal</td>
+                <td className="py-3 text-right font-mono text-sm" style={{ color: 'var(--text-main)' }}>₹ {formatINR(woodResult.subtotal)}</td>
+                <td className="py-3 text-right font-mono text-sm" style={{ color: 'var(--text-main)' }}>₹ {formatINR(plyResult.subtotal)}</td>
+                <td className="py-3 text-right font-mono text-sm font-bold" style={{ color: 'var(--accent-wood-light)' }}>₹ {formatINR(woodResult.subtotal + plyResult.subtotal)}</td>
+              </tr>
 
-      <div style={{ borderTop: '1px solid var(--table-border)', padding: '1rem 1.5rem' }} className="space-y-3 no-print">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-medium" style={{ color: 'var(--text-main)' }}>Subtotal</span>
-          <span className="font-mono text-sm font-semibold" style={{ color: 'var(--text-main)' }}>₹ {formatINR(result.subtotal)}</span>
+              {/* Profit */}
+              <tr className="font-semibold text-emerald-500">
+                <td className="py-3 text-sm">Profit</td>
+                <td className="py-3 text-right font-mono text-sm">₹ {formatINR(woodResult.profit)} <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>({woodResult.profitPct}%)</span></td>
+                <td className="py-3 text-right font-mono text-sm">₹ {formatINR(plyResult.profit)} <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>({plyResult.profitPct}%)</span></td>
+                <td className="py-3 text-right font-mono text-sm font-bold">₹ {formatINR(woodResult.profit + plyResult.profit)}</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-medium flex items-center gap-1.5" style={{ color: 'var(--accent-emerald)' }}>
-            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-emerald)' }} />
-            Profit ({result.profitPct !== undefined ? result.profitPct : 20}%)
-          </span>
-          <span className="font-mono text-sm font-semibold" style={{ color: 'var(--accent-emerald)' }}>+ ₹ {formatINR(result.profit)}</span>
+      ) : (
+        /* Original progress bars layout */
+        <div className="p-6 space-y-4 no-print">
+          {costLines.map(({ label, value }) => (
+            <div key={label} className="group">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="inline-flex h-6 w-6 items-center justify-center rounded-full text-[0.65rem] font-bold"
+                    style={{ background: 'var(--card-inner-bg)', color: 'var(--accent-wood)' }}
+                    aria-hidden="true"
+                  >
+                    {costLineIcons[label]}
+                  </span>
+                  <span className="text-sm transition-colors" style={{ color: 'var(--text-muted)' }}>{label}</span>
+                </div>
+                <span className="font-mono text-sm font-medium" style={{ color: 'var(--text-main)' }}>₹ {formatINR(value)}</span>
+              </div>
+              <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--card-inner-bg)' }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${maxCost > 0 ? (value / maxCost) * 100 : 0}%`,
+                    background: 'linear-gradient(90deg, var(--accent-wood-light), var(--accent-wood))',
+                    transition: 'width 0.5s ease-out',
+                  }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
+
+      {!isCombined && (
+        <div style={{ borderTop: '1px solid var(--table-border)', padding: '1rem 1.5rem' }} className="space-y-3 no-print">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium" style={{ color: 'var(--text-main)' }}>Subtotal</span>
+            <span className="font-mono text-sm font-semibold" style={{ color: 'var(--text-main)' }}>₹ {formatINR(result.subtotal)}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium flex items-center gap-1.5" style={{ color: 'var(--accent-emerald)' }}>
+              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-emerald)' }} />
+              Profit ({result.profitPct !== undefined ? result.profitPct : 20}%)
+            </span>
+            <span className="font-mono text-sm font-semibold" style={{ color: 'var(--accent-emerald)' }}>+ ₹ {formatINR(result.profit)}</span>
+          </div>
+        </div>
+      )}
 
       <div className="p-6 pt-0 print-total-wrapper">
         <div className="total-card animate-glow">

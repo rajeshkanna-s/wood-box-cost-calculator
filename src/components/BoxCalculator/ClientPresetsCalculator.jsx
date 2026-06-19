@@ -1,117 +1,169 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { CLIENT_PRESETS, generateDefaultParts } from '../../engine/clientPresets';
+import { useBoxCalculator } from '../../hooks/useBoxCalculator';
+import DimensionInputs from './DimensionInputs';
+import RateInputs from './RateInputs';
+import PartsTable from './PartsTable';
+import CostSummary from './CostSummary';
 
-const formatINR = (n) =>
-  Number(n || 0).toLocaleString('en-IN', { maximumFractionDigits: 2, minimumFractionDigits: 2 });
-
-const formatCFT = (n) => Number(n || 0).toFixed(4);
-
-const formatDimension = (n) => {
-  const value = Number(n || 0);
-  return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+const isWoodProduct = (product) => {
+  const name = product.name.toLowerCase();
+  if (name.includes('plywood') && !name.includes('pinewood') && !name.includes('rubberwood') && !name.includes('countrywood')) {
+    return false;
+  }
+  if (name.includes('ply box') && !name.includes('support reaper')) {
+    return false;
+  }
+  return true;
 };
 
-export default function ClientPresetsCalculator({ onPrintPreset, onDownloadPresetPDF }) {
+export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, onOpenClientQuote }) {
+  // We initialize the calculator state with the first product of the first company
+  const defaultProduct = CLIENT_PRESETS[0].products[0];
+  
+  const calc = useBoxCalculator({
+    l: defaultProduct.l,
+    w: defaultProduct.w,
+    h: defaultProduct.h,
+    unit: defaultProduct.unit
+  });
+
   // Select Company State
   const [selectedCompanyId, setSelectedCompanyId] = useState(CLIENT_PRESETS[0].id);
 
+  // Custom client name state
+  const [customCompanyName, setCustomCompanyName] = useState('CUSTOM CLIENT');
+
   // Active Company Object
   const company = useMemo(() => {
-    return CLIENT_PRESETS.find((c) => c.id === selectedCompanyId) || CLIENT_PRESETS[0];
-  }, [selectedCompanyId]);
+    if (selectedCompanyId === 'other') {
+      return {
+        id: 'other',
+        companyName: customCompanyName,
+        products: [
+          {
+            id: 'custom-product',
+            name: 'CUSTOM PRODUCT',
+            sizeLabel: 'Custom',
+            l: 1140,
+            w: 1080,
+            h: 120,
+            unit: 'mm',
+            price: 1020,
+            parts: null
+          }
+        ]
+      };
+    }
+    const rawCompany = CLIENT_PRESETS.find((c) => c.id === selectedCompanyId) || CLIENT_PRESETS[0];
+    return {
+      ...rawCompany,
+      products: rawCompany.products.filter(isWoodProduct)
+    };
+  }, [selectedCompanyId, customCompanyName]);
 
   // Select Product State (default to first product of selected company)
-  const [selectedProductId, setSelectedProductId] = useState(company.products[0].id);
+  const [selectedProductId, setSelectedProductId] = useState(company.products[0]?.id || 'custom-product');
 
   // Active Product Object
   const product = useMemo(() => {
-    return company.products.find((p) => p.id === selectedProductId) || company.products[0];
+    return company.products.find((p) => p.id === selectedProductId) || company.products[0] || company.products[0];
   }, [company, selectedProductId]);
 
-  // Editable parts and price states
-  const [parts, setParts] = useState(() => product.parts || generateDefaultParts(product.name, product.l, product.w, product.h, product.unit));
-  const [customPrice, setCustomPrice] = useState(product.price);
+  // Negotiated flat price state
+  const [useNegotiatedPrice, setUseNegotiatedPrice] = useState(true);
+  const [negotiatedPrice, setNegotiatedPrice] = useState(defaultProduct.price);
 
-  // Reset editable fields when product preset changes
+  // Reset/Load new product preset specs when company/product selection changes
   useEffect(() => {
-    setParts(product.parts || generateDefaultParts(product.name, product.l, product.w, product.h, product.unit));
-    setCustomPrice(product.price);
+    if (product) {
+      setNegotiatedPrice(product.price);
+      setUseNegotiatedPrice(true);
+      const resolvedParts = product.parts || generateDefaultParts(product.name, product.l, product.w, product.h, product.unit);
+      // Load preset into calc hook
+      calc.loadPreset(product, resolvedParts);
+    }
   }, [product]);
 
-  const updatePart = (index, field, value) => {
-    setParts((prevParts) => {
-      const newParts = [...prevParts];
-      const nextValue = field === 'label' || field === 'id' ? value : Number(value) || 0;
-      newParts[index] = { ...newParts[index], [field]: nextValue };
-      return newParts;
-    });
+  // Handle company change
+  const handleCompanyChange = (e) => {
+    const nextCompanyId = e.target.value;
+    setSelectedCompanyId(nextCompanyId);
+    if (nextCompanyId === 'other') {
+      setSelectedProductId('custom-product');
+    } else {
+      const nextCompany = CLIENT_PRESETS.find((c) => c.id === nextCompanyId);
+      if (nextCompany) {
+        const woodProducts = nextCompany.products.filter(isWoodProduct);
+        if (woodProducts.length > 0) {
+          setSelectedProductId(woodProducts[0].id);
+        } else if (nextCompany.products.length > 0) {
+          setSelectedProductId(nextCompany.products[0].id);
+        }
+      }
+    }
   };
 
-  // Helper to calculate CFT for a part
-  const getPartCFT = (part) => {
-    const lengthMm = part.useInchLength ? part.l * 25.4 : part.l;
-    const widthMm = part.useInchWidth ? part.w * 25.4 : part.w;
-    return (lengthMm * widthMm * part.h * part.qty) / (304.8 ** 3);
-  };
 
-  // Memoized parts with computed CFT
-  const partsWithCFT = useMemo(() => {
-    return parts.map((p) => ({
-      ...p,
-      cft: getPartCFT(p),
-    }));
-  }, [parts]);
+  // Overridden Wood calculation result when negotiated price is active
+  const woodResultOverridden = useMemo(() => {
+    if (!useNegotiatedPrice) return calc.woodResult;
 
-  // Totals calculations
-  const totalCFT = useMemo(() => {
-    return partsWithCFT.reduce((sum, p) => sum + p.cft, 0);
-  }, [partsWithCFT]);
-
-  const vestCFT = useMemo(() => {
-    return totalCFT * 0.1; // 10% waste
-  }, [totalCFT]);
-
-  const billableCFT = useMemo(() => {
-    return totalCFT + vestCFT;
-  }, [totalCFT, vestCFT]);
-
-  // Prepares the preset data payload to match what QuoteSheet templates expect
-  const getPresetDataPayload = () => {
-    const dims = { l: product.l, w: product.w, h: product.h, unit: product.unit };
-    const rates = { wastePct: 10, profitPct: 0, cftRate: 0 };
-    const result = {
-      partsWithCFT,
-      totalCFT,
-      vestCFT,
-      billable: billableCFT,
-      woodCost: 0,
+    return {
+      ...calc.woodResult,
+      woodCost: negotiatedPrice,
       labourCost: 0,
       nailCost: 0,
       transportCost: 0,
       packingCost: 0,
       clampCost: 0,
-      subtotal: customPrice,
-      profitPct: 0,
+      subtotal: negotiatedPrice,
       profit: 0,
-      finalTotal: customPrice,
+      finalTotal: negotiatedPrice,
     };
-    return { dims, rates, result };
-  };
+  }, [calc.woodResult, useNegotiatedPrice, negotiatedPrice]);
 
-  const handleCompanyChange = (e) => {
-    const nextCompanyId = e.target.value;
-    setSelectedCompanyId(nextCompanyId);
-    const nextCompany = CLIENT_PRESETS.find((c) => c.id === nextCompanyId);
-    if (nextCompany && nextCompany.products.length > 0) {
-      setSelectedProductId(nextCompany.products[0].id);
+  // Consolidated result
+  const combinedResult = useMemo(() => {
+    if (calc.useWood && !calc.usePly) {
+      return woodResultOverridden;
     }
+    if (!calc.useWood && calc.usePly) {
+      return calc.plyResult;
+    }
+    const finalTotal = (woodResultOverridden.finalTotal || 0) + (calc.plyResult.finalTotal || 0);
+    return {
+      wood: woodResultOverridden,
+      ply: calc.plyResult,
+      finalTotal,
+    };
+  }, [calc.useWood, calc.usePly, woodResultOverridden, calc.plyResult]);
+
+  // Prepares data payload for preview and print
+  const getPresetDataPayload = () => {
+    return {
+      dims: calc.woodDims,
+      rates: calc.woodRates,
+      result: combinedResult,
+      clientName: company.companyName,
+      useWood: calc.useWood,
+      usePly: calc.usePly,
+      woodDims: calc.woodDims,
+      woodRates: calc.woodRates,
+      woodResult: woodResultOverridden,
+      wood: woodResultOverridden,
+      plyDims: calc.plyDims,
+      plyRates: calc.plyRates,
+      plyResult: calc.plyResult,
+      ply: calc.plyResult
+    };
   };
 
   return (
     <div className="space-y-6">
-      {/* Selectors Glass Card */}
-      <div className="glass-card p-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Selectors Card */}
+      <div className="glass-card p-5 animate-fade-in">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div className="flex flex-col gap-2">
             <label htmlFor="company-select" className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
               Select Client / Company
@@ -127,6 +179,7 @@ export default function ClientPresetsCalculator({ onPrintPreset, onDownloadPrese
                   {c.companyName}
                 </option>
               ))}
+              <option value="other">Other (Custom Client)</option>
             </select>
           </div>
 
@@ -139,173 +192,241 @@ export default function ClientPresetsCalculator({ onPrintPreset, onDownloadPrese
               value={selectedProductId}
               onChange={(e) => setSelectedProductId(e.target.value)}
               className="premium-select"
+              disabled={selectedCompanyId === 'other'}
             >
-              {company.products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.sizeLabel})
-                </option>
-              ))}
+              {selectedCompanyId === 'other' ? (
+                <option value="custom-product">Custom Product</option>
+              ) : (
+                company.products.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} ({p.sizeLabel})
+                  </option>
+                ))
+              )}
             </select>
           </div>
-        </div>
-      </div>
 
-      {/* Preset Details & Fixed Price */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="glass-card p-6 flex flex-col justify-between lg:col-span-2">
-          <div>
-            <span className="badge badge-wood mb-3">Loaded Preset Specs</span>
-            <h3 className="text-xl font-bold uppercase tracking-wide mb-4" style={{ color: 'var(--text-main)' }}>
-              {product.name}
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              <div className="glass-card-inner p-3 text-center">
-                <span className="block text-[10px] uppercase font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Length ({product.unit})</span>
-                <strong className="text-lg font-mono font-bold" style={{ color: 'var(--text-main)' }}>{formatDimension(product.l)}</strong>
-              </div>
-              <div className="glass-card-inner p-3 text-center">
-                <span className="block text-[10px] uppercase font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Width ({product.unit})</span>
-                <strong className="text-lg font-mono font-bold" style={{ color: 'var(--text-main)' }}>{formatDimension(product.w)}</strong>
-              </div>
-              <div className="glass-card-inner p-3 text-center">
-                <span className="block text-[10px] uppercase font-semibold mb-1" style={{ color: 'var(--text-muted)' }}>Height ({product.unit})</span>
-                <strong className="text-lg font-mono font-bold" style={{ color: 'var(--text-main)' }}>{formatDimension(product.h)}</strong>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Pricing Panel */}
-        <div className="total-card flex flex-col justify-between">
-          <div className="space-y-1.5">
-            <span className="quote-total-label block mb-1">Negotiated Flat Price</span>
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-black" style={{ color: 'var(--text-light)' }}>₹</span>
+          <div className="flex flex-col gap-2 p-3 rounded-lg bg-black/5 dark:bg-white/5 border border-blue-600/20">
+            <div className="flex items-center gap-2 mb-1.5">
               <input
+                id="use-negotiated-price"
+                type="checkbox"
+                checked={useNegotiatedPrice}
+                onChange={(e) => setUseNegotiatedPrice(e.target.checked)}
+                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
+              />
+              <label htmlFor="use-negotiated-price" className="text-xs font-bold uppercase tracking-wider select-none cursor-pointer" style={{ color: 'var(--text-main)' }}>
+                Use Negotiated Flat Price
+              </label>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-bold" style={{ color: 'var(--text-muted)' }}>₹</span>
+              <input
+                id="flat-price-input"
                 type="number"
-                value={customPrice}
-                onChange={(e) => setCustomPrice(Number(e.target.value) || 0)}
-                className="w-full bg-white dark:bg-[#111217] border border-amber-700/40 dark:border-slate-700 rounded-lg px-3 py-2 font-mono text-2xl font-extrabold text-amber-950 dark:text-amber-100 focus:outline-none focus:border-amber-600 focus:ring-2 focus:ring-amber-500/20 text-left shadow-sm transition-all duration-200"
-                style={{ fontFamily: 'JetBrains Mono, monospace' }}
+                value={negotiatedPrice}
+                onChange={(e) => setNegotiatedPrice(Number(e.target.value) || 0)}
+                disabled={!useNegotiatedPrice}
+                className="w-full bg-white dark:bg-[#111217] border border-blue-600/30 dark:border-slate-700 rounded px-2.5 py-1 font-mono text-sm font-bold text-main disabled:opacity-40 disabled:cursor-not-allowed"
               />
             </div>
-            <small className="block text-xs" style={{ color: 'var(--text-muted)' }}>
-              Editable override for invoice generation
-            </small>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 mt-4">
-            <button
-              onClick={() => onPrintPreset(getPresetDataPayload())}
-              className="btn-primary flex-1 justify-center py-2.5"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-              <span>Print Quote</span>
-            </button>
-            <button
-              onClick={() => onDownloadPresetPDF(getPresetDataPayload())}
-              className="btn-secondary flex-1 justify-center py-2.5"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              <span>Download PDF</span>
-            </button>
-          </div>
+
+          {selectedCompanyId === 'other' && (
+            <div className="flex flex-col gap-2 animate-fade-in md:col-span-3">
+              <label htmlFor="custom-company-name" className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                Enter Custom Client Name
+              </label>
+              <input
+                id="custom-company-name"
+                type="text"
+                value={customCompanyName}
+                onChange={(e) => setCustomCompanyName(e.target.value)}
+                placeholder="e.g. GOOGLE INDIA"
+                className="premium-input text-left"
+                style={{ textAlign: 'left' }}
+              />
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Parts List / Cut Sheet */}
-      <div className="glass-card">
-        <div className="section-header">
-          <div className="flex items-center">
-            <div className="section-icon">
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-              </svg>
-            </div>
-            <span className="section-title">Cut Sheet Specifications (Bill of Materials)</span>
-          </div>
-          <span className="text-xs font-semibold px-2 py-1 rounded bg-amber-500/10 text-amber-700 dark:text-amber-300">
-            Total Net CFT: {formatCFT(totalCFT)}
-          </span>
+      {/* Material Checkbox Toggles */}
+      <div className="flex flex-wrap items-center gap-6 p-4 rounded-xl border border-blue-600/20 bg-gradient-to-r from-blue-600/5 to-indigo-600/5 backdrop-blur-md no-print">
+        <div className="flex items-center gap-2.5">
+          <input
+            type="checkbox"
+            id="toggle-wood"
+            checked={calc.useWood}
+            onChange={(e) => {
+              if (!e.target.checked && !calc.usePly) return;
+              calc.setUseWood(e.target.checked);
+            }}
+            className="w-5 h-5 rounded-lg text-amber-500 border-amber-500/30 focus:ring-amber-500 cursor-pointer"
+          />
+          <label htmlFor="toggle-wood" className="text-sm font-extrabold uppercase tracking-wider select-none cursor-pointer" style={{ color: 'var(--text-main)' }}>
+            Pine Wood
+          </label>
         </div>
-        <div className="overflow-x-auto">
-          <table className="premium-table">
-            <thead>
-              <tr>
-                <th className="w-[10%]">Part ID</th>
-                <th className="w-[45%]">Description</th>
-                <th className="w-[15%]">L (mm/in)</th>
-                <th className="w-[15%]">W (mm/in)</th>
-                <th className="w-[15%]">H (mm/in)</th>
-                <th className="w-[10%]">Qty</th>
-                <th className="w-[10%]">CFT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {partsWithCFT.map((part, index) => (
-                <tr key={`${part.id}-${index}`}>
-                  <td>
-                    <input
-                      type="text"
-                      value={part.id}
-                      onChange={(e) => updatePart(index, 'id', e.target.value)}
-                      className="table-input"
-                      style={{ textAlign: 'left', fontFamily: 'JetBrains Mono, monospace', fontWeight: 600 }}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="text"
-                      value={part.label}
-                      onChange={(e) => updatePart(index, 'label', e.target.value)}
-                      className="table-input"
-                      style={{ textAlign: 'left' }}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      value={part.l}
-                      onChange={(e) => updatePart(index, 'l', e.target.value)}
-                      className="table-input font-mono"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      value={part.w}
-                      onChange={(e) => updatePart(index, 'w', e.target.value)}
-                      className="table-input font-mono"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      value={part.h}
-                      onChange={(e) => updatePart(index, 'h', e.target.value)}
-                      className="table-input font-mono"
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="number"
-                      value={part.qty}
-                      onChange={(e) => updatePart(index, 'qty', e.target.value)}
-                      className="table-input font-mono"
-                    />
-                  </td>
-                  <td className="pr-4 py-2 font-mono font-medium text-right" style={{ color: 'var(--text-muted)' }}>
-                    {formatCFT(part.cft)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+
+        <div className="flex items-center gap-2.5">
+          <input
+            type="checkbox"
+            id="toggle-ply"
+            checked={calc.usePly}
+            onChange={(e) => {
+              if (!e.target.checked && !calc.useWood) return;
+              calc.setUsePly(e.target.checked);
+            }}
+            className="w-5 h-5 rounded-lg text-blue-500 border-blue-500/30 focus:ring-blue-500 cursor-pointer"
+          />
+          <label htmlFor="toggle-ply" className="text-sm font-extrabold uppercase tracking-wider select-none cursor-pointer" style={{ color: 'var(--text-main)' }}>
+            Plywood
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2.5 border-l pl-6 border-blue-600/20">
+          <input
+            type="checkbox"
+            id="toggle-link"
+            checked={calc.linkDims}
+            onChange={(e) => calc.setLinkDims(e.target.checked)}
+            className="w-5 h-5 rounded-lg text-indigo-500 border-indigo-500/30 focus:ring-indigo-500 cursor-pointer"
+          />
+          <label htmlFor="toggle-link" className="text-sm font-extrabold uppercase tracking-wider select-none cursor-pointer" style={{ color: 'var(--text-main)' }}>
+            Link Dimensions
+          </label>
         </div>
       </div>
+
+      {/* Grid for Dimensions & Rates */}
+      <div className="space-y-6">
+        {/* Dimensions Row */}
+        <div className={`grid grid-cols-1 ${calc.useWood && calc.usePly ? 'xl:grid-cols-2' : ''} gap-6 no-print`}>
+          {calc.useWood && (
+            <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.12s', animationFillMode: 'both' }}>
+              <div className="border-l-4 border-amber-500 pl-3">
+                <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Pine Wood Dimensions</h3>
+              </div>
+              <div className="flex-1">
+                <DimensionInputs
+                  dims={calc.woodDims}
+                  onChange={calc.updateWoodDim}
+                  onUnitChange={calc.changeWoodUnit}
+                  showPresetSelector={false}
+                />
+              </div>
+            </div>
+          )}
+
+          {calc.usePly && (
+            <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.14s', animationFillMode: 'both' }}>
+              <div className="border-l-4 border-blue-500 pl-3">
+                <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Plywood Dimensions</h3>
+              </div>
+              <div className="flex-1">
+                <DimensionInputs
+                  dims={calc.plyDims}
+                  onChange={calc.updatePlyDim}
+                  onUnitChange={calc.changePlyUnit}
+                  showPresetSelector={true}
+                  onSelectPreset={calc.loadPlyPreset}
+                  isPlywood={true}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Rates Row */}
+        <div className={`grid grid-cols-1 ${calc.useWood && calc.usePly ? 'xl:grid-cols-2' : ''} gap-6 no-print`}>
+          {calc.useWood && (
+            <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
+              <div className="border-l-4 border-amber-500 pl-3">
+                <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Pine Wood Rates & Parameters</h3>
+              </div>
+              <div className="flex-1">
+                <RateInputs 
+                  rates={calc.woodRates} 
+                  onChange={(key, val) => {
+                    setUseNegotiatedPrice(false);
+                    calc.updateWoodRate(key, val);
+                  }} 
+                />
+              </div>
+            </div>
+          )}
+
+          {calc.usePly && (
+            <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.17s', animationFillMode: 'both' }}>
+              <div className="border-l-4 border-blue-500 pl-3">
+                <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Plywood Rates & Parameters</h3>
+              </div>
+              <div className="flex-1">
+                <RateInputs rates={calc.plyRates} onChange={calc.updatePlyRate} isPlywood={true} />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Parts Breakdown Table (matches Custom Calculator) */}
+      <div className={`grid grid-cols-1 ${calc.useWood && calc.usePly ? 'xl:grid-cols-2' : ''} gap-6 no-print`}>
+        {calc.useWood && (
+          <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.18s', animationFillMode: 'both' }}>
+            <div className="border-l-4 border-amber-500 pl-3">
+              <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Pine Wood Parts Breakdown</h3>
+            </div>
+            <div className="flex-1">
+              <PartsTable
+                parts={woodResultOverridden.partsWithCFT || []}
+                result={woodResultOverridden}
+                rates={calc.woodRates}
+                onUpdatePart={(idx, fld, val) => calc.updatePart('wood', idx, fld, val)}
+                onAddPart={() => calc.addCustomPart('wood')}
+                onRemovePart={(idx) => calc.removePart('wood', idx)}
+                onToggleExclusion={(idx) => calc.togglePartExclusion('wood', idx)}
+                compact={calc.useWood && calc.usePly}
+              />
+            </div>
+          </div>
+        )}
+        {calc.usePly && (
+          <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+            <div className="border-l-4 border-blue-500 pl-3">
+              <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Plywood Parts Breakdown</h3>
+            </div>
+            <div className="flex-1">
+              <PartsTable
+                parts={calc.plyResult.partsWithCFT || []}
+                result={calc.plyResult}
+                rates={calc.plyRates}
+                onUpdatePart={(idx, fld, val) => calc.updatePart('ply', idx, fld, val)}
+                onAddPart={() => calc.addCustomPart('ply')}
+                onRemovePart={(idx) => calc.removePart('ply', idx)}
+                onToggleExclusion={(idx) => calc.togglePartExclusion('ply', idx)}
+                compact={calc.useWood && calc.usePly}
+                isPlywood={true}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Cost Summary (matches Custom Calculator) */}
+      <CostSummary
+        result={combinedResult}
+        rates={calc.woodRates}
+        useWood={calc.useWood}
+        usePly={calc.usePly}
+        woodResult={woodResultOverridden}
+        woodRates={calc.woodRates}
+        plyResult={calc.plyResult}
+        plyRates={calc.plyRates}
+        onPrintQuote={() => onPrintQuote(getPresetDataPayload())}
+        onDownloadPDF={() => onDownloadPDF(getPresetDataPayload())}
+        onOpenClientQuote={() => onOpenClientQuote(getPresetDataPayload())}
+      />
     </div>
   );
 }

@@ -1,11 +1,20 @@
 import React from 'react';
 import { BOX_PRESETS } from '../../engine/boxTypes';
 
-export default function PresetSelector({ onSelect }) {
+export const PLYWOOD_PRESETS = [
+  { id: 'p1', label: '300 × 300 × 300 mm', l: 300, w: 300, h: 300 },
+  { id: 'p2', label: '500 × 400 × 300 mm', l: 500, w: 400, h: 300 },
+  { id: 'p3', label: '600 × 500 × 400 mm', l: 600, w: 500, h: 400 },
+  { id: 'p4', label: '800 × 600 × 500 mm', l: 800, w: 600, h: 500 },
+  { id: 'p5', label: '1000 × 800 × 600 mm', l: 1000, w: 800, h: 600 },
+];
+
+export default function PresetSelector({ onSelect, compact = false, isPlywood = false }) {
   const handleChange = (e) => {
     const selectedId = e.target.value;
     if (!selectedId) return;
-    const preset = BOX_PRESETS.find(p => p.id === selectedId);
+    const presetsList = isPlywood ? PLYWOOD_PRESETS : BOX_PRESETS;
+    const preset = presetsList.find(p => p.id === selectedId);
     if (preset) {
       const scrollY = window.scrollY;
       e.target.blur();
@@ -15,6 +24,60 @@ export default function PresetSelector({ onSelect }) {
       });
     }
   };
+
+  if (compact) {
+    if (isPlywood) {
+      return (
+        <select
+          id="preset-select"
+          onChange={handleChange}
+          className="premium-select w-full"
+          defaultValue=""
+          style={{ padding: '0.4rem 0.75rem', fontSize: '0.8125rem' }}
+        >
+          <option value="" disabled>Choose a plywood preset (L × W × H)</option>
+          {PLYWOOD_PRESETS.map(preset => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <select
+        id="preset-select"
+        onChange={handleChange}
+        className="premium-select w-full"
+        defaultValue=""
+        style={{ padding: '0.4rem 0.75rem', fontSize: '0.8125rem' }}
+      >
+        <option value="" disabled>Choose a standard box preset (L × W × H)</option>
+        <optgroup label="18-Reper (Small/Medium)">
+          {BOX_PRESETS.filter(p => p.reper === 18).map(preset => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label} — {preset.reper}-Reper
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label="22-Reper (Large)">
+          {BOX_PRESETS.filter(p => p.reper === 22).map(preset => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label} — {preset.reper}-Reper
+            </option>
+          ))}
+        </optgroup>
+        <optgroup label="26-Reper (Extra Long)">
+          {BOX_PRESETS.filter(p => p.reper === 26).map(preset => (
+            <option key={preset.id} value={preset.id}>
+              {preset.label} — {preset.reper}-Reper
+            </option>
+          ))}
+        </optgroup>
+      </select>
+    );
+  }
 
   return (
     <div className="glass-card p-5">

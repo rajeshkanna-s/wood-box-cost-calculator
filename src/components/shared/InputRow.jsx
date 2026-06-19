@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function InputRow({ label, value, onChange, type = "number", unit, min, max, step }) {
+export default function InputRow({ label, value, onChange, type = "number", unit, min, max, step, disabled = false }) {
   return (
     <div className="flex items-center justify-between py-2.5 group">
       <label 
@@ -25,10 +25,12 @@ export default function InputRow({ label, value, onChange, type = "number", unit
           min={min}
           max={max}
           step={step}
-          className="premium-input"
+          disabled={disabled}
+          className="premium-input disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ width: '6rem' }}
         />
       </div>
     </div>
   );
 }
+

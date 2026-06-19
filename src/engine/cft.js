@@ -16,6 +16,7 @@ export const DEFAULT_RATES = {
   clamp:     30,
   profitPct: 20,
   wastePct:  10,
+  rateUnit:  'CFT',
 };
 
 export function calcBoxCost(parts, rates = DEFAULT_RATES) {
@@ -51,4 +52,30 @@ export function calcBoxCost(parts, rates = DEFAULT_RATES) {
     transportCost, packingCost, clampCost,
     subtotal, profitPct, profit, finalTotal
   };
+}
+
+export function convertToInches(val, unit) {
+  const value = Number(val) || 0;
+  switch (unit) {
+    case 'mm': return value / 25.4;
+    case 'cm': return value / 2.54;
+    case 'ft': return value * 12;
+    case 'm':  return value * 39.3700787;
+    case 'in':
+    default:
+      return value;
+  }
+}
+
+export function convertFromInches(valInInches, targetUnit) {
+  const value = Number(valInInches) || 0;
+  switch (targetUnit) {
+    case 'mm': return value * 25.4;
+    case 'cm': return value * 2.54;
+    case 'ft': return value / 12;
+    case 'm':  return value / 39.3700787;
+    case 'in':
+    default:
+      return value;
+  }
 }

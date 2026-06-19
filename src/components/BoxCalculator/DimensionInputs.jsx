@@ -1,13 +1,18 @@
 import React from 'react';
 import InputRow from '../shared/InputRow';
-import { inchToMm } from '../../engine/cft';
+import PresetSelector from '../BoxPresets/PresetSelector';
+import { inchToMm, convertToInches, convertFromInches } from '../../engine/cft';
 import { getReperType } from '../../engine/parts';
 
-export default function DimensionInputs({ dims, onChange }) {
-  const l_mm = inchToMm(dims.l);
-  const w_mm = inchToMm(dims.w);
-  const h_mm = inchToMm(dims.h);
-  const reperType = getReperType(dims.l);
+export default function DimensionInputs({ dims, onChange, onUnitChange, showPresetSelector = false, onSelectPreset, isPlywood = false }) {
+  const currentUnit = dims.unit || 'in';
+  
+  // Convert current dimensions to inches to figure out Reper Type
+  const lInches = convertToInches(dims.l, currentUnit);
+  const wInches = convertToInches(dims.w, currentUnit);
+  const hInches = convertToInches(dims.h, currentUnit);
+  
+  const reperType = getReperType(lInches);
 
   const reperInfo = {
     18: { label: '18-Reper', desc: 'Standard Frame' },
@@ -16,43 +21,78 @@ export default function DimensionInputs({ dims, onChange }) {
   };
   const reper = reperInfo[reperType];
 
+  // Convert for conversion panel display
+  // If current unit is not 'mm', convert to 'mm'. If it is 'mm', convert to 'in'.
+  const showUnit = currentUnit === 'mm' ? 'in' : 'mm';
+  const l_converted = currentUnit === 'mm' ? convertFromInches(lInches, 'in') : convertFromInches(lInches, 'mm');
+  const w_converted = currentUnit === 'mm' ? convertFromInches(wInches, 'in') : convertFromInches(wInches, 'mm');
+  const h_converted = currentUnit === 'mm' ? convertFromInches(hInches, 'in') : convertFromInches(hInches, 'mm');
+
   return (
-    <div className="glass-card h-full flex flex-col">
+    <div className="glass-card flex flex-col">
       <div className="section-header">
-        <div className="flex items-center">
-          <div className="section-icon">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-            </svg>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center">
+            <div className="section-icon">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+            </div>
+            <h2 className="section-title mr-2">Box Dimensions</h2>
           </div>
-          <h2 className="section-title">Box Dimensions</h2>
+          <select
+            value={currentUnit}
+            onChange={(e) => onUnitChange(e.target.value)}
+            className="header-unit-select"
+          >
+            <option value="in">Inch (in)</option>
+            <option value="mm">Millimeter (mm)</option>
+            <option value="cm">Centimeter (cm)</option>
+            <option value="ft">Feet (ft)</option>
+            <option value="m">Meter (m)</option>
+          </select>
         </div>
-        <span className="badge badge-wood">
-          {reper.label}
-        </span>
+        {!isPlywood && (
+          <span className="badge badge-wood">
+            {reper.label}
+          </span>
+        )}
       </div>
 
       <div className="p-5 flex-1 flex flex-col">
         {/* Input fields */}
         <div className="space-y-1" style={{ borderBottom: 'none' }}>
-          <InputRow label="Length (L)" value={dims.l} onChange={(v) => onChange('l', v)} unit="in" min="1" step="0.5" />
+          {showPresetSelector && (
+            <>
+              <div className="flex items-center justify-between py-2 px-1 gap-4">
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>Select Box Size:</span>
+                <div className="flex-1 max-w-[60%]">
+                  <PresetSelector compact={true} onSelect={onSelectPreset} isPlywood={isPlywood} />
+                </div>
+              </div>
+              <div style={{ borderTop: '1px solid var(--table-border)', marginBottom: '0.25rem' }} />
+            </>
+          )}
+          <InputRow label="Length (L)" value={dims.l} onChange={(v) => onChange('l', v)} unit={currentUnit} min="1" step="0.5" />
           <div style={{ borderTop: '1px solid var(--table-border)' }} />
-          <InputRow label="Width (W)" value={dims.w} onChange={(v) => onChange('w', v)} unit="in" min="1" step="0.5" />
+          <InputRow label="Width (W)" value={dims.w} onChange={(v) => onChange('w', v)} unit={currentUnit} min="1" step="0.5" />
           <div style={{ borderTop: '1px solid var(--table-border)' }} />
-          <InputRow label="Height (H)" value={dims.h} onChange={(v) => onChange('h', v)} unit="in" min="1" step="0.5" />
+          <InputRow label="Height (H)" value={dims.h} onChange={(v) => onChange('h', v)} unit={currentUnit} min="1" step="0.5" />
         </div>
 
-        {/* MM Conversion Panel */}
+        {/* mm or inch Conversion Panel */}
         <div className="mt-auto pt-5">
           <div className="glass-card-inner p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent-wood)' }} />
-              <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-light)', letterSpacing: '0.08em' }}>Live mm Conversion</p>
+              <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-light)', letterSpacing: '0.08em' }}>
+                Live {showUnit === 'in' ? 'Inch' : 'mm'} Conversion
+              </p>
             </div>
             <div className="grid grid-cols-3 gap-3">
-              <MmValue label="Length" value={l_mm} />
-              <MmValue label="Width" value={w_mm} />
-              <MmValue label="Height" value={h_mm} />
+              <ConversionValue label="Length" value={l_converted} unit={showUnit} />
+              <ConversionValue label="Width" value={w_converted} unit={showUnit} />
+              <ConversionValue label="Height" value={h_converted} unit={showUnit} />
             </div>
           </div>
         </div>
@@ -61,12 +101,12 @@ export default function DimensionInputs({ dims, onChange }) {
   );
 }
 
-function MmValue({ label, value }) {
+function ConversionValue({ label, value, unit }) {
   return (
     <div className="text-center">
       <p className="text-xs font-medium uppercase" style={{ color: 'var(--text-light)', letterSpacing: '0.06em', fontSize: '0.625rem' }}>{label}</p>
       <p className="font-mono text-sm font-semibold" style={{ color: 'var(--text-main)' }}>{value.toFixed(1)}</p>
-      <p style={{ color: 'var(--text-light)', fontSize: '0.625rem' }}>mm</p>
+      <p style={{ color: 'var(--text-light)', fontSize: '0.625rem' }}>{unit}</p>
     </div>
   );
 }

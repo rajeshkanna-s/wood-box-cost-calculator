@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import InputRow from '../shared/InputRow';
 
-export default function RateInputs({ rates, onChange }) {
+export default function RateInputs({ rates, onChange, isPlywood = false, disabled = false }) {
   const [collapsed, setCollapsed] = useState(false);
 
   return (
-    <div className="glass-card h-full flex flex-col">
+    <div className="glass-card flex flex-col">
       <div 
         className="section-header cursor-pointer select-none" 
         onClick={() => setCollapsed(!collapsed)}
@@ -30,17 +30,57 @@ export default function RateInputs({ rates, onChange }) {
       {!collapsed && (
         <div className="p-5 flex-1 flex flex-col">
           <div className="space-y-1">
-            <InputRow label="CFT Rate (Wood)" value={rates.cftRate} onChange={(v) => onChange('cftRate', v)} unit="₹" min="0" />
+            <div className="flex items-center justify-between py-2.5 group">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+                  Rate ({isPlywood ? 'Plywood' : 'Wood'})
+                </label>
+                <select
+                  value={rates.rateUnit || 'CFT'}
+                  onChange={(e) => onChange('rateUnit', e.target.value)}
+                  disabled={disabled}
+                  className="header-unit-select disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ width: '6.5rem' }}
+                >
+                  <option value="CBM">CBM</option>
+                  <option value="CCM">CCM — (CUBIC CENTIMETERS)</option>
+                  <option value="CFT">CFT</option>
+                  <option value="CM">CM — (CENTIMETERS)</option>
+                  <option value="CU.MT">CU.MT — (CUBICMETER)</option>
+                  <option value="gms">gms — (Gram)</option>
+                  <option value="gty">gty — (G)</option>
+                  <option value="Kgs">Kgs — (Kilograms)</option>
+                  <option value="NOS" style={{ fontWeight: 'bold' }}>NOS — (NUMBERS) ★</option>
+                  <option value="SFT">SFT</option>
+                  <option value="SFT of 4 NOS">SFT of 4 NOS</option>
+                  <option value="SQM">SQM</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold uppercase w-6 text-right" style={{ color: 'var(--text-light)', letterSpacing: '0.04em' }}>
+                  ₹
+                </span>
+                <input
+                  type="number"
+                  value={rates.cftRate}
+                  onChange={(e) => onChange('cftRate', e.target.value)}
+                  min="0"
+                  disabled={disabled}
+                  className="premium-input disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ width: '6rem' }}
+                />
+              </div>
+            </div>
             <div style={{ borderTop: '1px solid var(--table-border)' }} />
-            <InputRow label="Labour" value={rates.labour} onChange={(v) => onChange('labour', v)} unit="₹" min="0" />
+            <InputRow label="Labour" value={rates.labour} onChange={(v) => onChange('labour', v)} unit="₹" min="0" disabled={disabled} />
             <div style={{ borderTop: '1px solid var(--table-border)' }} />
-            <InputRow label="Nail" value={rates.nail} onChange={(v) => onChange('nail', v)} unit="₹" min="0" />
+            <InputRow label="Nail" value={rates.nail} onChange={(v) => onChange('nail', v)} unit="₹" min="0" disabled={disabled} />
             <div style={{ borderTop: '1px solid var(--table-border)' }} />
-            <InputRow label="Transport" value={rates.transport} onChange={(v) => onChange('transport', v)} unit="₹" min="0" />
+            <InputRow label="Transport" value={rates.transport} onChange={(v) => onChange('transport', v)} unit="₹" min="0" disabled={disabled} />
             <div style={{ borderTop: '1px solid var(--table-border)' }} />
-            <InputRow label="Packing Cover" value={rates.packing} onChange={(v) => onChange('packing', v)} unit="₹" min="0" />
+            <InputRow label="Packing Cover" value={rates.packing} onChange={(v) => onChange('packing', v)} unit="₹" min="0" disabled={disabled} />
             <div style={{ borderTop: '1px solid var(--table-border)' }} />
-            <InputRow label="Clamp" value={rates.clamp} onChange={(v) => onChange('clamp', v)} unit="₹" min="0" />
+            <InputRow label="Clamp" value={rates.clamp} onChange={(v) => onChange('clamp', v)} unit="₹" min="0" disabled={disabled} />
           </div>
 
           {/* Percentages Section */}
@@ -59,8 +99,9 @@ export default function RateInputs({ rates, onChange }) {
                     onChange={(e) => onChange('wastePct', e.target.value)}
                     min="0"
                     max="100"
-                    className="premium-input"
-                    style={{ width: '5rem' }}
+                    disabled={disabled}
+                    className="premium-input disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ width: '6rem' }}
                   />
                 </div>
               </div>
@@ -78,8 +119,9 @@ export default function RateInputs({ rates, onChange }) {
                     onChange={(e) => onChange('profitPct', e.target.value)}
                     min="0"
                     max="100"
-                    className="premium-input"
-                    style={{ width: '5rem' }}
+                    disabled={disabled}
+                    className="premium-input disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ width: '6rem' }}
                   />
                 </div>
               </div>
@@ -90,3 +132,4 @@ export default function RateInputs({ rates, onChange }) {
     </div>
   );
 }
+

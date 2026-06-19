@@ -1,30 +1,146 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { buildParts } from '../engine/parts';
-import { calcBoxCost, DEFAULT_RATES } from '../engine/cft';
+import { calcBoxCost, DEFAULT_RATES, convertToInches, convertFromInches } from '../engine/cft';
 
 const TEXT_PART_FIELDS = new Set(['id', 'label']);
 
-export function useBoxCalculator(initialDims = { l: 75, w: 35, h: 35 }) {
-  const [dims,  setDims]  = useState(initialDims);
-  const [rates, setRates] = useState(DEFAULT_RATES);
-  const [parts, setParts] = useState(() => buildParts(initialDims.l, initialDims.w, initialDims.h));
+export function useBoxCalculator(initialDims = { l: 75, w: 35, h: 35, unit: 'in' }) {
+  const [useWood, setUseWood] = useState(true);
+  const [usePly, setUsePly] = useState(true);
+  const [linkDims, setLinkDims] = useState(false);
 
-  // Auto-regenerate standard parts ONLY when global dimensions change.
-  // This intentionally overwrites any custom manual edits to reset the calculator.
+  const [woodDims, setWoodDims] = useState(initialDims);
+  const [woodRates, setWoodRates] = useState(DEFAULT_RATES);
+  const [woodParts, setWoodParts] = useState(() => buildParts(initialDims.l, initialDims.w, initialDims.h));
+
+  const [plyDims, setPlyDims] = useState(() => ({
+    unit: 'mm',
+    l: Number((initialDims.l * 25.4).toFixed(2)),
+    w: Number((initialDims.w * 25.4).toFixed(2)),
+    h: Number((initialDims.h * 25.4).toFixed(2)),
+  }));
+  const [plyRates, setPlyRates] = useState(() => ({ ...DEFAULT_RATES, rateUnit: 'CFT' }));
+  const [plyParts, setPlyParts] = useState(() => buildParts(initialDims.l, initialDims.w, initialDims.h));
+
+  const skipWoodPartsRegen = useRef(false);
+
+  // Auto-regenerate standard wood parts ONLY when wood dimensions change
   useEffect(() => {
-    setParts(buildParts(dims.l, dims.w, dims.h));
-  }, [dims.l, dims.w, dims.h]);
+    if (skipWoodPartsRegen.current) {
+      skipWoodPartsRegen.current = false;
+      return;
+    }
+    const lInches = convertToInches(woodDims.l, woodDims.unit || 'in');
+    const wInches = convertToInches(woodDims.w, woodDims.unit || 'in');
+    const hInches = convertToInches(woodDims.h, woodDims.unit || 'in');
+    setWoodParts(buildParts(lInches, wInches, hInches));
+  }, [woodDims.l, woodDims.w, woodDims.h, woodDims.unit]);
 
-  const updateDim  = (key, val) => setDims(d  => ({ ...d,  [key]: Number(val) || 0 }));
-  const updateRate = (key, val) => setRates(r => ({ ...r, [key]: Number(val) || 0 }));
+  // Auto-regenerate standard ply parts ONLY when ply dimensions change
+  useEffect(() => {
+    const lInches = convertToInches(plyDims.l, plyDims.unit || 'in');
+    const wInches = convertToInches(plyDims.w, plyDims.unit || 'in');
+    const hInches = convertToInches(plyDims.h, plyDims.unit || 'in');
+    setPlyParts(buildParts(lInches, wInches, hInches));
+  }, [plyDims.l, plyDims.w, plyDims.h, plyDims.unit]);
 
-  const loadPreset = (preset) => {
-    setDims({ l: preset.l, w: preset.w, h: preset.h });
+  const updateWoodDim = (key, val) => {
+    const numVal = Number(val) || 0;
+    setWoodDims(d => {
+      const next = { ...d, [key]: numVal };
+      if (linkDims) {
+        setPlyDims(p => ({ ...p, [key]: numVal }));
+      }
+      return next;
+    });
+  };
+
+  const updatePlyDim = (key, val) => {
+    const numVal = Number(val) || 0;
+    setPlyDims(d => {
+      const next = { ...d, [key]: numVal };
+      if (linkDims) {
+        setWoodDims(w => ({ ...w, [key]: numVal }));
+      }
+      return next;
+    });
+  };
+
+  const changeWoodUnit = (newUnit) => {
+    setWoodDims(d => {
+      const oldUnit = d.unit || 'in';
+      if (oldUnit === newUnit) return d;
+      const lInches = convertToInches(d.l, oldUnit);
+      const wInches = convertToInches(d.w, oldUnit);
+      const hInches = convertToInches(d.h, oldUnit);
+      const next = {
+        unit: newUnit,
+        l: Number(convertFromInches(lInches, newUnit).toFixed(2)),
+        w: Number(convertFromInches(wInches, newUnit).toFixed(2)),
+        h: Number(convertFromInches(hInches, newUnit).toFixed(2)),
+      };
+      if (linkDims) {
+        setPlyDims(next);
+      }
+      return next;
+    });
+  };
+
+  const changePlyUnit = (newUnit) => {
+    setPlyDims(d => {
+      const oldUnit = d.unit || 'in';
+      if (oldUnit === newUnit) return d;
+      const lInches = convertToInches(d.l, oldUnit);
+      const wInches = convertToInches(d.w, oldUnit);
+      const hInches = convertToInches(d.h, oldUnit);
+      const next = {
+        unit: newUnit,
+        l: Number(convertFromInches(lInches, newUnit).toFixed(2)),
+        w: Number(convertFromInches(wInches, newUnit).toFixed(2)),
+        h: Number(convertFromInches(hInches, newUnit).toFixed(2)),
+      };
+      if (linkDims) {
+        setWoodDims(next);
+      }
+      return next;
+    });
+  };
+
+  const updateWoodRate = (key, val) => setWoodRates(r => ({ ...r, [key]: key === 'rateUnit' ? val : (Number(val) || 0) }));
+  const updatePlyRate = (key, val) => setPlyRates(r => ({ ...r, [key]: key === 'rateUnit' ? val : (Number(val) || 0) }));
+
+  const loadPreset = (preset, customParts = null) => {
+    if (customParts) {
+      skipWoodPartsRegen.current = true;
+      setWoodParts(customParts);
+    }
+    const targetUnitWood = preset.unit || woodDims.unit || 'in';
+    const hasUnit = preset.unit !== undefined;
+    setWoodDims({
+      unit: targetUnitWood,
+      l: hasUnit ? preset.l : Number(convertFromInches(preset.l, targetUnitWood).toFixed(2)),
+      w: hasUnit ? preset.w : Number(convertFromInches(preset.w, targetUnitWood).toFixed(2)),
+      h: hasUnit ? preset.h : Number(convertFromInches(preset.h, targetUnitWood).toFixed(2)),
+    });
+  };
+
+  const loadPlyPreset = (preset) => {
+    const targetUnitPly = plyDims.unit || 'in';
+    const lInches = preset.l / 25.4;
+    const wInches = preset.w / 25.4;
+    const hInches = preset.h / 25.4;
+    setPlyDims({
+      unit: targetUnitPly,
+      l: Number(convertFromInches(lInches, targetUnitPly).toFixed(2)),
+      w: Number(convertFromInches(wInches, targetUnitPly).toFixed(2)),
+      h: Number(convertFromInches(hInches, targetUnitPly).toFixed(2)),
+    });
   };
 
   // Manual part override functions
-  const updatePart = (index, field, value) => {
-    setParts(prevParts => {
+  const updatePart = (type, index, field, value) => {
+    const setter = type === 'wood' ? setWoodParts : setPlyParts;
+    setter(prevParts => {
       const newParts = [...prevParts];
       const nextValue = TEXT_PART_FIELDS.has(field) ? value : Number(value) || 0;
       newParts[index] = { ...newParts[index], [field]: nextValue };
@@ -32,37 +148,63 @@ export function useBoxCalculator(initialDims = { l: 75, w: 35, h: 35 }) {
     });
   };
 
-  const addCustomPart = () => {
-    setParts(prevParts => [
+  const addCustomPart = (type) => {
+    const setter = type === 'wood' ? setWoodParts : setPlyParts;
+    setter(prevParts => [
       ...prevParts, 
       { id: 'CUSTOM', label: 'Custom Part', l: 0, w: 0, h: 0, qty: 1, isCustom: true, isExcluded: false }
     ]);
   };
 
-  const removePart = (index) => {
-    setParts(prevParts => prevParts.filter((_, i) => i !== index));
+  const removePart = (type, index) => {
+    const setter = type === 'wood' ? setWoodParts : setPlyParts;
+    setter(prevParts => prevParts.filter((_, i) => i !== index));
   };
 
-  const togglePartExclusion = (index) => {
-    setParts(prevParts => {
+  const togglePartExclusion = (type, index) => {
+    const setter = type === 'wood' ? setWoodParts : setPlyParts;
+    setter(prevParts => {
       const newParts = [...prevParts];
       newParts[index] = { ...newParts[index], isExcluded: !newParts[index].isExcluded };
       return newParts;
     });
   };
 
+  const woodResult = useMemo(() => {
+    return calcBoxCost(woodParts, woodRates);
+  }, [woodParts, woodRates]);
+
+  const plyResult = useMemo(() => {
+    return calcBoxCost(plyParts, plyRates);
+  }, [plyParts, plyRates]);
+
   const result = useMemo(() => {
-    return calcBoxCost(parts, rates);
-  }, [parts, rates]);
+    if (useWood && !usePly) {
+      return woodResult;
+    }
+    if (!useWood && usePly) {
+      return plyResult;
+    }
+    const finalTotal = (woodResult.finalTotal || 0) + (plyResult.finalTotal || 0);
+    return {
+      wood: woodResult,
+      ply: plyResult,
+      finalTotal,
+    };
+  }, [useWood, usePly, woodResult, plyResult]);
 
   return { 
-    dims, 
-    rates, 
-    parts,
+    useWood, setUseWood,
+    usePly, setUsePly,
+    linkDims, setLinkDims,
+    woodDims, woodRates, woodParts, woodResult,
+    plyDims, plyRates, plyParts, plyResult,
     result, 
-    updateDim, 
-    updateRate, 
+    updateWoodDim, updatePlyDim,
+    updateWoodRate, updatePlyRate,
+    changeWoodUnit, changePlyUnit,
     loadPreset,
+    loadPlyPreset,
     updatePart,
     addCustomPart,
     removePart,
