@@ -49,12 +49,13 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
             <thead>
               <tr>
                 <th style={thStyle(true, false, { width: '10%' })}>Part</th>
-                <th style={thStyle(false, false, { width: '30%' })}>Description</th>
+                <th style={thStyle(false, false, { width: isPlywood ? '22%' : '30%' })}>Description</th>
                 <th style={thStyle(false, false, { width: '11%' })}>L (mm)</th>
                 <th style={thStyle(false, false, { width: '11%' })}>W (mm)</th>
                 <th style={thStyle(false, false, { width: '11%' })}>H (mm)</th>
                 <th style={thStyle(false, false, { width: '11%', textAlign: 'center' })}>Qty</th>
-                <th style={thStyle(false, true, { width: '11%', textAlign: 'right' })}>{rates?.rateUnit || 'CFT'}</th>
+                <th style={thStyle(false, !isPlywood, { width: '11%', textAlign: 'right' })}>{isPlywood ? 'CFT' : (rates?.rateUnit || 'CFT')}</th>
+                {isPlywood && <th style={thStyle(false, true, { width: '11%', textAlign: 'right' })}>SFT</th>}
                 <th style={compact ? { width: '40px', padding: '0.5rem 0.25rem' } : { width: '60px' }}></th>
               </tr>
             </thead>
@@ -130,9 +131,14 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
                       disabled={p.isExcluded}
                     />
                   </td>
-                  <td style={tdStyle(false, true, { color: 'var(--text-main)', textAlign: 'right' })} className="font-mono font-semibold">
+                  <td style={tdStyle(false, !isPlywood, { color: 'var(--text-main)', textAlign: 'right' })} className="font-mono font-semibold">
                     {formatCFT(p.cft)}
                   </td>
+                  {isPlywood && (
+                    <td style={tdStyle(false, true, { color: 'var(--text-main)', textAlign: 'right' })} className="font-mono font-semibold text-blue-600 dark:text-blue-400">
+                      {Number(p.sft || 0).toFixed(compact ? 2 : 3)}
+                    </td>
+                  )}
                   <td style={{ paddingRight: compact ? '0.5rem' : '1rem', width: compact ? '40px' : '60px' }}>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       {onToggleExclusion && (
@@ -152,7 +158,7 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
                           )}
                         </button>
                       )}
-                      {p.isCustom && (
+                      {onRemovePart && (
                         <button 
                           onClick={() => onRemovePart(i)}
                           className="p-1 rounded text-red-500 hover:text-red-700 bg-red-500/10 transition-colors"
@@ -188,20 +194,43 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
       <div style={{ borderTop: '1px solid var(--table-border)', padding: compact ? '0.75rem 1rem' : '1rem 1.5rem' }} className="mt-auto">
         <div className="space-y-2">
           <div className="flex justify-between items-center text-sm" style={{ fontSize: compact ? '11px' : undefined }}>
-            <span style={{ color: 'var(--text-light)' }}>Net {rates?.rateUnit || 'CFT'}</span>
-            <span className="font-mono font-medium" style={{ color: 'var(--text-main)' }}>{formatCFT(result.totalCFT)}</span>
+            <span style={{ color: 'var(--text-light)' }}>Net Volume / Area</span>
+            <span className="font-mono font-medium" style={{ color: 'var(--text-main)' }}>
+              {formatCFT(result.totalCFT)} CFT
+              {isPlywood && (
+                <span className="text-blue-600 dark:text-blue-400 font-bold ml-2">
+                  • {Number(result.totalSFT || 0).toFixed(compact ? 2 : 3)} SFT
+                </span>
+              )}
+            </span>
           </div>
           <div className="flex justify-between items-center text-sm" style={{ fontSize: compact ? '11px' : undefined }}>
             <span className="flex items-center gap-1.5" style={{ color: 'var(--text-light)' }}>
-              <span className="inline-block w-1 h-1 rounded-full" style={{ backgroundColor: 'var(--accent-wood)' }} />
+              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-wood)' }} />
               + {safeWastePct}% Waste Factor
             </span>
-            <span className="font-mono" style={{ color: 'var(--text-muted)' }}>{formatCFT(result.vestCFT)}</span>
+            <span className="font-mono" style={{ color: 'var(--text-muted)' }}>
+              {formatCFT(result.vestCFT)} CFT
+              {isPlywood && (
+                <span className="text-blue-600 dark:text-blue-400 font-bold ml-2">
+                  • {Number(result.vestSFT || 0).toFixed(compact ? 2 : 3)} SFT
+                </span>
+              )}
+            </span>
           </div>
           <div className="glow-line my-2" />
           <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold" style={{ color: 'var(--accent-wood)', fontSize: compact ? '11px' : undefined }}>Billable {rates?.rateUnit || 'CFT'}</span>
-            <span className="font-mono text-lg font-bold" style={{ color: 'var(--accent-wood-light)', fontSize: compact ? '1rem' : undefined }}>{formatCFT(result.billable)}</span>
+            <span className="text-sm font-semibold" style={{ color: 'var(--accent-wood)', fontSize: compact ? '11px' : undefined }}>
+              Billable Volume / Area
+            </span>
+            <span className="font-mono text-lg font-bold" style={{ color: 'var(--accent-wood-light)', fontSize: compact ? '1rem' : undefined }}>
+              {formatCFT(result.billable)} CFT
+              {isPlywood && (
+                <span className="text-blue-600 dark:text-blue-400 font-extrabold ml-2">
+                  • {Number(result.billableSFT || 0).toFixed(compact ? 2 : 3)} SFT
+                </span>
+              )}
+            </span>
           </div>
         </div>
       </div>

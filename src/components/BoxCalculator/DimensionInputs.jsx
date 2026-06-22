@@ -15,10 +15,9 @@ export default function DimensionInputs({
 }) {
   const currentUnit = dims.unit || 'in';
   
-  // Convert current dimensions to inches to figure out Reper Type
-  const lInches = convertToInches(dims.l, currentUnit);
-  const wInches = convertToInches(dims.w, currentUnit);
-  const hInches = convertToInches(dims.h, currentUnit);
+  const lInches = currentUnit === 'sft' ? 0 : convertToInches(dims.l, currentUnit);
+  const wInches = currentUnit === 'sft' ? 0 : convertToInches(dims.w, currentUnit);
+  const hInches = currentUnit === 'sft' ? 0 : convertToInches(dims.h, currentUnit);
   
   const reperType = getReperType(lInches);
 
@@ -29,12 +28,14 @@ export default function DimensionInputs({
   };
   const reper = reperInfo[reperType];
 
+  const boxSurfaceAreaSqFt = currentUnit === 'sft' ? dims.l : ((2 * (lInches * wInches + wInches * hInches + lInches * hInches)) / 144);
+
   // Convert for conversion panel display
   // If current unit is not 'mm', convert to 'mm'. If it is 'mm', convert to 'in'.
   const showUnit = currentUnit === 'mm' ? 'in' : 'mm';
-  const l_converted = currentUnit === 'mm' ? convertFromInches(lInches, 'in') : convertFromInches(lInches, 'mm');
-  const w_converted = currentUnit === 'mm' ? convertFromInches(wInches, 'in') : convertFromInches(wInches, 'mm');
-  const h_converted = currentUnit === 'mm' ? convertFromInches(hInches, 'in') : convertFromInches(hInches, 'mm');
+  const l_converted = currentUnit === 'sft' ? 0 : (currentUnit === 'mm' ? convertFromInches(lInches, 'in') : convertFromInches(lInches, 'mm'));
+  const w_converted = currentUnit === 'sft' ? 0 : (currentUnit === 'mm' ? convertFromInches(wInches, 'in') : convertFromInches(wInches, 'mm'));
+  const h_converted = currentUnit === 'sft' ? 0 : (currentUnit === 'mm' ? convertFromInches(hInches, 'in') : convertFromInches(hInches, 'mm'));
 
   return (
     <div className="glass-card flex flex-col">
@@ -58,6 +59,7 @@ export default function DimensionInputs({
             <option value="cm">Centimeter (cm)</option>
             <option value="ft">Feet (ft)</option>
             <option value="m">Meter (m)</option>
+            {isPlywood && <option value="sft">Square Feet (sft)</option>}
           </select>
         </div>
         {!isPlywood && (
@@ -74,7 +76,7 @@ export default function DimensionInputs({
             <>
               <div className="flex items-center justify-between py-2 px-1 gap-4">
                 <span className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>
-                  {isPlywood ? 'Select Box Size:' : 'Select Negotiated Product:'}
+                  Select Box Size:
                 </span>
                 <div className="flex-1 max-w-[60%]">
                   {customPresetSelector ? (
@@ -87,29 +89,54 @@ export default function DimensionInputs({
               <div style={{ borderTop: '1px solid var(--table-border)', marginBottom: '0.25rem' }} />
             </>
           )}
-          <InputRow label="Length (L)" value={dims.l} onChange={(v) => onChange('l', v)} unit={currentUnit} min="1" step="0.5" />
-          <div style={{ borderTop: '1px solid var(--table-border)' }} />
-          <InputRow label="Width (W)" value={dims.w} onChange={(v) => onChange('w', v)} unit={currentUnit} min="1" step="0.5" />
-          <div style={{ borderTop: '1px solid var(--table-border)' }} />
-          <InputRow label="Height (H)" value={dims.h} onChange={(v) => onChange('h', v)} unit={currentUnit} min="1" step="0.5" />
+          {currentUnit === 'sft' ? (
+            <>
+              <InputRow label="Total Area" value={dims.l} onChange={(v) => onChange('l', v)} unit="SFT" min="0.1" step="0.5" />
+              <div style={{ borderTop: '1px solid var(--table-border)' }} />
+              <InputRow label="Thickness (H)" value={dims.h} onChange={(v) => onChange('h', v)} unit="mm" min="1" step="1" />
+            </>
+          ) : (
+            <>
+              <InputRow label="Length (L)" value={dims.l} onChange={(v) => onChange('l', v)} unit={currentUnit} min="1" step="0.5" />
+              <div style={{ borderTop: '1px solid var(--table-border)' }} />
+              <InputRow label="Width (W)" value={dims.w} onChange={(v) => onChange('w', v)} unit={currentUnit} min="1" step="0.5" />
+              <div style={{ borderTop: '1px solid var(--table-border)' }} />
+              <InputRow label="Height (H)" value={dims.h} onChange={(v) => onChange('h', v)} unit={currentUnit} min="1" step="0.5" />
+              {isPlywood && (
+                <>
+                  <div style={{ borderTop: '1px solid var(--table-border)' }} />
+                  <div className="flex items-center justify-between py-2.5 group">
+                    <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+                      Total Plywood Area
+                    </span>
+                    <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded">
+                      {boxSurfaceAreaSqFt.toFixed(2)} SFT
+                    </span>
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
 
         {/* mm or inch Conversion Panel */}
-        <div className="mt-auto pt-5">
-          <div className="glass-card-inner p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent-wood)' }} />
-              <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-light)', letterSpacing: '0.08em' }}>
-                Live {showUnit === 'in' ? 'Inch' : 'mm'} Conversion
-              </p>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <ConversionValue label="Length" value={l_converted} unit={showUnit} />
-              <ConversionValue label="Width" value={w_converted} unit={showUnit} />
-              <ConversionValue label="Height" value={h_converted} unit={showUnit} />
+        {currentUnit !== 'sft' && (
+          <div className="mt-auto pt-5">
+            <div className="glass-card-inner p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-block w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--accent-wood)' }} />
+                <p className="text-xs font-semibold uppercase" style={{ color: 'var(--text-light)', letterSpacing: '0.08em' }}>
+                  Live {showUnit === 'in' ? 'Inch' : 'mm'} Conversion
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <ConversionValue label="Length" value={l_converted} unit={showUnit} />
+                <ConversionValue label="Width" value={w_converted} unit={showUnit} />
+                <ConversionValue label="Height" value={h_converted} unit={showUnit} />
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

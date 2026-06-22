@@ -29,55 +29,70 @@ export default function CostSummary({
   const costLines = !isCombined
     ? [
         { label: useWood ? 'Wood Cost' : 'Plywood Cost', value: result.woodCost },
-        { label: 'Labour', value: result.labourCost },
-        { label: 'Nails', value: result.nailCost },
-        { label: 'Transport', value: result.transportCost },
-        { label: 'Packing Cover', value: result.packingCost },
-        { label: 'Clamp', value: result.clampCost },
+        ...(rates?.labour !== null && rates?.labour !== undefined ? [{ label: 'Labour', value: result.labourCost }] : []),
+        ...(rates?.nail !== null && rates?.nail !== undefined ? [{ label: 'Nails', value: result.nailCost }] : []),
+        ...(rates?.transport !== null && rates?.transport !== undefined ? [{ label: 'Transport', value: result.transportCost }] : []),
+        ...(rates?.packing !== null && rates?.packing !== undefined ? [{ label: 'Packing Cover', value: result.packingCost }] : []),
+        ...(rates?.clamp !== null && rates?.clamp !== undefined ? [{ label: 'Clamp', value: result.clampCost }] : []),
+        ...(result.customCosts ? Object.entries(result.customCosts).map(([label, val]) => ({ label, value: val })) : [])
       ]
     : [];
 
   const maxCost = !isCombined ? Math.max(...costLines.map(c => c.value)) : 0;
 
   const combinedCostItems = isCombined
-    ? [
-        {
-          label: 'Material Cost',
-          wVal: woodResult.woodCost,
-          pVal: plyResult.woodCost,
-          combVal: woodResult.woodCost + plyResult.woodCost
-        },
-        {
-          label: 'Labour',
-          wVal: woodResult.labourCost,
-          pVal: plyResult.labourCost,
-          combVal: woodResult.labourCost + plyResult.labourCost
-        },
-        {
-          label: 'Nails',
-          wVal: woodResult.nailCost,
-          pVal: plyResult.nailCost,
-          combVal: woodResult.nailCost + plyResult.nailCost
-        },
-        {
-          label: 'Transport',
-          wVal: woodResult.transportCost,
-          pVal: plyResult.transportCost,
-          combVal: woodResult.transportCost + plyResult.transportCost
-        },
-        {
-          label: 'Packing Cover',
-          wVal: woodResult.packingCost,
-          pVal: plyResult.packingCost,
-          combVal: woodResult.packingCost + plyResult.packingCost
-        },
-        {
-          label: 'Clamp',
-          wVal: woodResult.clampCost,
-          pVal: plyResult.clampCost,
-          combVal: woodResult.clampCost + plyResult.clampCost
-        },
-      ]
+    ? (() => {
+        const itemsMap = {};
+        const addVal = (label, side, val) => {
+          if (!itemsMap[label]) {
+            itemsMap[label] = { label, wVal: 0, pVal: 0 };
+          }
+          itemsMap[label][side] = val;
+        };
+        
+        addVal('Material Cost', 'wVal', woodResult.woodCost);
+        addVal('Material Cost', 'pVal', plyResult.woodCost);
+        
+        const wRates = woodResult.rates || {};
+        const pRates = plyResult.rates || {};
+        
+        if (wRates.labour !== null && wRates.labour !== undefined || pRates.labour !== null && pRates.labour !== undefined) {
+          addVal('Labour', 'wVal', woodResult.labourCost);
+          addVal('Labour', 'pVal', plyResult.labourCost);
+        }
+        if (wRates.nail !== null && wRates.nail !== undefined || pRates.nail !== null && pRates.nail !== undefined) {
+          addVal('Nails', 'wVal', woodResult.nailCost);
+          addVal('Nails', 'pVal', plyResult.nailCost);
+        }
+        if (wRates.transport !== null && wRates.transport !== undefined || pRates.transport !== null && pRates.transport !== undefined) {
+          addVal('Transport', 'wVal', woodResult.transportCost);
+          addVal('Transport', 'pVal', plyResult.transportCost);
+        }
+        if (wRates.packing !== null && wRates.packing !== undefined || pRates.packing !== null && pRates.packing !== undefined) {
+          addVal('Packing Cover', 'wVal', woodResult.packingCost);
+          addVal('Packing Cover', 'pVal', plyResult.packingCost);
+        }
+        if (wRates.clamp !== null && wRates.clamp !== undefined || pRates.clamp !== null && pRates.clamp !== undefined) {
+          addVal('Clamp', 'wVal', woodResult.clampCost);
+          addVal('Clamp', 'pVal', plyResult.clampCost);
+        }
+        
+        if (woodResult.customCosts) {
+          Object.entries(woodResult.customCosts).forEach(([label, val]) => {
+            addVal(label, 'wVal', val);
+          });
+        }
+        if (plyResult.customCosts) {
+          Object.entries(plyResult.customCosts).forEach(([label, val]) => {
+            addVal(label, 'pVal', val);
+          });
+        }
+        
+        return Object.values(itemsMap).map(item => ({
+          ...item,
+          combVal: item.wVal + item.pVal
+        }));
+      })()
     : [];
 
   return (

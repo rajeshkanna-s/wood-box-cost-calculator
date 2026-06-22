@@ -7,26 +7,16 @@ import PartsTable from './PartsTable';
 import CostSummary from './CostSummary';
 
 const isWoodProduct = (product) => {
-  const name = product.name.toLowerCase();
-  if (name.includes('plywood') && !name.includes('pinewood') && !name.includes('rubberwood') && !name.includes('countrywood')) {
-    return false;
-  }
-  if (name.includes('ply box') && !name.includes('support reaper')) {
-    return false;
-  }
   return true;
 };
 
 export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, onOpenClientQuote }) {
-  // We initialize the calculator state with the first product of the first company
-  const defaultProduct = CLIENT_PRESETS[0].products[0];
-  
   const calc = useBoxCalculator({
-    l: defaultProduct.l,
-    w: defaultProduct.w,
-    h: defaultProduct.h,
-    unit: defaultProduct.unit
-  });
+    l: 1140,
+    w: 800,
+    h: 195,
+    unit: 'mm'
+  }, { isPresetTab: true });
 
   // Select Company State
   const [selectedCompanyId, setSelectedCompanyId] = useState(CLIENT_PRESETS[0].id);
@@ -34,142 +24,35 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
   // Custom client name state
   const [customCompanyName, setCustomCompanyName] = useState('CUSTOM CLIENT');
 
-  // Active Company Object
-  const company = useMemo(() => {
+  // Active Company Name
+  const companyName = useMemo(() => {
     if (selectedCompanyId === 'other') {
-      return {
-        id: 'other',
-        companyName: customCompanyName,
-        products: [
-          {
-            id: 'custom-product',
-            name: 'CUSTOM PRODUCT',
-            sizeLabel: 'Custom',
-            l: 1140,
-            w: 1080,
-            h: 120,
-            unit: 'mm',
-            price: 1020,
-            parts: null
-          }
-        ]
-      };
+      return customCompanyName;
     }
-    const rawCompany = CLIENT_PRESETS.find((c) => c.id === selectedCompanyId) || CLIENT_PRESETS[0];
-    return {
-      ...rawCompany,
-      products: rawCompany.products.filter(isWoodProduct)
-    };
+    const matched = CLIENT_PRESETS.find((c) => c.id === selectedCompanyId);
+    return matched ? matched.companyName : '';
   }, [selectedCompanyId, customCompanyName]);
-
-  // Select Product State (default to first product of selected company)
-  const [selectedProductId, setSelectedProductId] = useState(company.products[0]?.id || 'custom-product');
-
-  // Active Product Object
-  const product = useMemo(() => {
-    return company.products.find((p) => p.id === selectedProductId) || company.products[0] || company.products[0];
-  }, [company, selectedProductId]);
-
-  // Negotiated flat price state
-  const [useNegotiatedPrice, setUseNegotiatedPrice] = useState(true);
-  const [negotiatedPrice, setNegotiatedPrice] = useState(defaultProduct.price);
-
-  // Reset/Load new product preset specs when company/product selection changes
-  useEffect(() => {
-    if (product) {
-      setNegotiatedPrice(product.price);
-      setUseNegotiatedPrice(true);
-      const resolvedParts = product.parts || generateDefaultParts(product.name, product.l, product.w, product.h, product.unit);
-      // Load preset into calc hook
-      calc.loadPreset(product, resolvedParts);
-    }
-  }, [product]);
 
   // Handle company change
   const handleCompanyChange = (e) => {
-    const nextCompanyId = e.target.value;
-    setSelectedCompanyId(nextCompanyId);
-    if (nextCompanyId === 'other') {
-      setSelectedProductId('custom-product');
-    } else {
-      const nextCompany = CLIENT_PRESETS.find((c) => c.id === nextCompanyId);
-      if (nextCompany) {
-        const woodProducts = nextCompany.products.filter(isWoodProduct);
-        if (woodProducts.length > 0) {
-          setSelectedProductId(woodProducts[0].id);
-        } else if (nextCompany.products.length > 0) {
-          setSelectedProductId(nextCompany.products[0].id);
-        }
-      }
-    }
+    setSelectedCompanyId(e.target.value);
   };
-  const handleWoodDimChange = (key, val) => {
-    setUseNegotiatedPrice(false);
-    calc.updateWoodDim(key, val);
-  };
-
-  const handleWoodUnitChange = (unit) => {
-    setUseNegotiatedPrice(false);
-    calc.changeWoodUnit(unit);
-  };
-
-  const handleWoodPartUpdate = (idx, fld, val) => {
-    setUseNegotiatedPrice(false);
-    calc.updatePart('wood', idx, fld, val);
-  };
-
-  const handleWoodPartAdd = () => {
-    setUseNegotiatedPrice(false);
-    calc.addCustomPart('wood');
-  };
-
-  const handleWoodPartRemove = (idx) => {
-    setUseNegotiatedPrice(false);
-    calc.removePart('wood', idx);
-  };
-
-  const handleWoodPartToggleExclusion = (idx) => {
-    setUseNegotiatedPrice(false);
-    calc.togglePartExclusion('wood', idx);
-  };
-
-
-
-
-
-  // Overridden Wood calculation result when negotiated price is active
-  const woodResultOverridden = useMemo(() => {
-    if (!useNegotiatedPrice) return calc.woodResult;
-
-    return {
-      ...calc.woodResult,
-      woodCost: negotiatedPrice,
-      labourCost: 0,
-      nailCost: 0,
-      transportCost: 0,
-      packingCost: 0,
-      clampCost: 0,
-      subtotal: negotiatedPrice,
-      profit: 0,
-      finalTotal: negotiatedPrice,
-    };
-  }, [calc.woodResult, useNegotiatedPrice, negotiatedPrice]);
 
   // Consolidated result
   const combinedResult = useMemo(() => {
     if (calc.useWood && !calc.usePly) {
-      return woodResultOverridden;
+      return calc.woodResult;
     }
     if (!calc.useWood && calc.usePly) {
       return calc.plyResult;
     }
-    const finalTotal = (woodResultOverridden.finalTotal || 0) + (calc.plyResult.finalTotal || 0);
+    const finalTotal = (calc.woodResult.finalTotal || 0) + (calc.plyResult.finalTotal || 0);
     return {
-      wood: woodResultOverridden,
+      wood: calc.woodResult,
       ply: calc.plyResult,
       finalTotal,
     };
-  }, [calc.useWood, calc.usePly, woodResultOverridden, calc.plyResult]);
+  }, [calc.useWood, calc.usePly, calc.woodResult, calc.plyResult]);
 
   // Prepares data payload for preview and print
   const getPresetDataPayload = () => {
@@ -177,13 +60,13 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
       dims: calc.useWood ? calc.woodDims : calc.plyDims,
       rates: calc.useWood ? calc.woodRates : calc.plyRates,
       result: combinedResult,
-      clientName: company.companyName,
+      clientName: companyName,
       useWood: calc.useWood,
       usePly: calc.usePly,
       woodDims: calc.woodDims,
       woodRates: calc.woodRates,
-      woodResult: woodResultOverridden,
-      wood: woodResultOverridden,
+      woodResult: calc.woodResult,
+      wood: calc.woodResult,
       plyDims: calc.plyDims,
       plyRates: calc.plyRates,
       plyResult: calc.plyResult,
@@ -215,34 +98,8 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
             </select>
           </div>
 
-          <div className="flex flex-col gap-2 p-3 rounded-lg bg-black/5 dark:bg-white/5 border border-blue-600/20">
-            <div className="flex items-center gap-2 mb-1.5">
-              <input
-                id="use-negotiated-price"
-                type="checkbox"
-                checked={useNegotiatedPrice}
-                onChange={(e) => setUseNegotiatedPrice(e.target.checked)}
-                className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500"
-              />
-              <label htmlFor="use-negotiated-price" className="text-xs font-bold uppercase tracking-wider select-none cursor-pointer" style={{ color: 'var(--text-main)' }}>
-                Use Negotiated Flat Price
-              </label>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-bold" style={{ color: 'var(--text-muted)' }}>₹</span>
-              <input
-                id="flat-price-input"
-                type="number"
-                value={negotiatedPrice}
-                onChange={(e) => setNegotiatedPrice(Number(e.target.value) || 0)}
-                disabled={!useNegotiatedPrice}
-                className="w-full bg-white dark:bg-[#111217] border border-blue-600/30 dark:border-slate-700 rounded px-2.5 py-1 font-mono text-sm font-bold text-main disabled:opacity-40 disabled:cursor-not-allowed"
-              />
-            </div>
-          </div>
-
           {selectedCompanyId === 'other' && (
-            <div className="flex flex-col gap-2 animate-fade-in md:col-span-2">
+            <div className="flex flex-col gap-2 animate-fade-in">
               <label htmlFor="custom-company-name" className="text-xs font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
                 Enter Custom Client Name
               </label>
@@ -269,6 +126,7 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
             checked={calc.useWood}
             onChange={(e) => {
               if (!e.target.checked && !calc.usePly) return;
+              if (!e.target.checked && calc.usePly) return; // Block unchecking wood when plywood is checked
               calc.setUseWood(e.target.checked);
             }}
             className="w-5 h-5 rounded-lg text-amber-500 border-amber-500/30 focus:ring-amber-500 cursor-pointer"
@@ -286,6 +144,20 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
             onChange={(e) => {
               if (!e.target.checked && !calc.useWood) return;
               calc.setUsePly(e.target.checked);
+              if (e.target.checked) {
+                calc.setUseWood(true);
+                // Switch to default plywood box dimensions (Section 1 from -01.xlsx)
+                calc.updateWoodDim('l', 1140);
+                calc.updateWoodDim('w', 800);
+                calc.updateWoodDim('h', 195);
+                calc.changeWoodUnit('mm');
+              } else {
+                // Switch to default pine wood block pallet dimensions (Section 5 from -02.xlsx)
+                calc.updateWoodDim('l', 1140);
+                calc.updateWoodDim('w', 1080);
+                calc.updateWoodDim('h', 130);
+                calc.changeWoodUnit('mm');
+              }
             }}
             className="w-5 h-5 rounded-lg text-blue-500 border-blue-500/30 focus:ring-blue-500 cursor-pointer"
           />
@@ -320,29 +192,10 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
               <div className="flex-1">
                 <DimensionInputs
                   dims={calc.woodDims}
-                  onChange={handleWoodDimChange}
-                  onUnitChange={handleWoodUnitChange}
+                  onChange={calc.updateWoodDim}
+                  onUnitChange={calc.changeWoodUnit}
                   showPresetSelector={false}
-                  customPresetSelector={
-                    <select
-                      id="preset-product-select"
-                      value={selectedProductId}
-                      onChange={(e) => setSelectedProductId(e.target.value)}
-                      className="premium-select w-full"
-                      disabled={selectedCompanyId === 'other'}
-                      style={{ padding: '0.4rem 0.75rem', fontSize: '0.8125rem' }}
-                    >
-                      {selectedCompanyId === 'other' ? (
-                        <option value="custom-product">Custom Product</option>
-                      ) : (
-                        company.products.map((p) => (
-                          <option key={p.id} value={p.id}>
-                            {p.name} ({p.sizeLabel})
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  }
+                  onSelectPreset={calc.loadPreset}
                 />
               </div>
             </div>
@@ -358,7 +211,7 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
                   dims={calc.plyDims}
                   onChange={calc.updatePlyDim}
                   onUnitChange={calc.changePlyUnit}
-                  showPresetSelector={true}
+                  showPresetSelector={false}
                   onSelectPreset={calc.loadPlyPreset}
                   isPlywood={true}
                 />
@@ -377,10 +230,7 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
               <div className="flex-1">
                 <RateInputs 
                   rates={calc.woodRates} 
-                  onChange={(key, val) => {
-                    setUseNegotiatedPrice(false);
-                    calc.updateWoodRate(key, val);
-                  }} 
+                  onChange={calc.updateWoodRate} 
                 />
               </div>
             </div>
@@ -408,13 +258,13 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
             </div>
             <div className="flex-1">
               <PartsTable
-                parts={woodResultOverridden.partsWithCFT || []}
-                result={woodResultOverridden}
+                parts={calc.woodResult.partsWithCFT || []}
+                result={calc.woodResult}
                 rates={calc.woodRates}
-                onUpdatePart={handleWoodPartUpdate}
-                onAddPart={handleWoodPartAdd}
-                onRemovePart={handleWoodPartRemove}
-                onToggleExclusion={handleWoodPartToggleExclusion}
+                onUpdatePart={(idx, fld, val) => calc.updatePart('wood', idx, fld, val)}
+                onAddPart={() => calc.addCustomPart('wood')}
+                onRemovePart={(idx) => calc.removePart('wood', idx)}
+                onToggleExclusion={(idx) => calc.togglePartExclusion('wood', idx)}
                 compact={calc.useWood && calc.usePly}
               />
             </div>
@@ -448,7 +298,7 @@ export default function ClientPresetsCalculator({ onPrintQuote, onDownloadPDF, o
         rates={calc.useWood ? calc.woodRates : calc.plyRates}
         useWood={calc.useWood}
         usePly={calc.usePly}
-        woodResult={woodResultOverridden}
+        woodResult={calc.woodResult}
         woodRates={calc.woodRates}
         plyResult={calc.plyResult}
         plyRates={calc.plyRates}
