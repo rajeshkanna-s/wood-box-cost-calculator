@@ -240,18 +240,27 @@ export default function QuoteSheet({
             <section className="quote-panel">
               <h2>Wood Summary</h2>
               <dl className="quote-kpi-list">
-                <div>
-                  <dt>Net {wRates.rateUnit || 'CFT'}</dt>
-                  <dd>{formatCFT(wResult.totalCFT)}</dd>
-                </div>
-                <div>
-                  <dt>Waste ({wRates.wastePct ?? 10}%)</dt>
-                  <dd>{formatCFT(wResult.vestCFT)}</dd>
-                </div>
-                <div className="quote-emphasis-row">
-                  <dt>Billable {wRates.rateUnit || 'CFT'}</dt>
-                  <dd>{formatCFT(wResult.billable)}</dd>
-                </div>
+                {wRates.wastePct !== null && wRates.wastePct !== undefined && wRates.wastePct > 0 ? (
+                  <>
+                    <div>
+                      <dt>Net {wRates.rateUnit || 'CFT'}</dt>
+                      <dd>{formatCFT(wResult.totalCFT)}</dd>
+                    </div>
+                    <div>
+                      <dt>Waste ({wRates.wastePct}%)</dt>
+                      <dd>{formatCFT(wResult.vestCFT)}</dd>
+                    </div>
+                    <div className="quote-emphasis-row">
+                      <dt>Billable {wRates.rateUnit || 'CFT'}</dt>
+                      <dd>{formatCFT(wResult.billable)}</dd>
+                    </div>
+                  </>
+                ) : (
+                  <div className="quote-emphasis-row">
+                    <dt>Total {wRates.rateUnit || 'CFT'}</dt>
+                    <dd>{formatCFT(wResult.totalCFT)}</dd>
+                  </div>
+                )}
               </dl>
             </section>
           </div>
@@ -272,18 +281,27 @@ export default function QuoteSheet({
             <section className="quote-panel">
               <h2>Plywood Summary</h2>
               <dl className="quote-kpi-list">
-                <div>
-                  <dt>Net {pRates.rateUnit || 'CFT'}</dt>
-                  <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.totalSFT || 0).toFixed(3) : formatCFT(pResult.totalCFT)}</dd>
-                </div>
-                <div>
-                  <dt>Waste ({pRates.wastePct ?? 10}%)</dt>
-                  <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.vestSFT || 0).toFixed(3) : formatCFT(pResult.vestCFT)}</dd>
-                </div>
-                <div className="quote-emphasis-row">
-                  <dt>Billable {pRates.rateUnit || 'CFT'}</dt>
-                  <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.billableSFT || 0).toFixed(3) : formatCFT(pResult.billable)}</dd>
-                </div>
+                {pRates.wastePct !== null && pRates.wastePct !== undefined && pRates.wastePct > 0 ? (
+                  <>
+                    <div>
+                      <dt>Net {pRates.rateUnit || 'CFT'}</dt>
+                      <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.totalSFT || 0).toFixed(3) : formatCFT(pResult.totalCFT)}</dd>
+                    </div>
+                    <div>
+                      <dt>Waste ({pRates.wastePct}%)</dt>
+                      <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.vestSFT || 0).toFixed(3) : formatCFT(pResult.vestCFT)}</dd>
+                    </div>
+                    <div className="quote-emphasis-row">
+                      <dt>Billable {pRates.rateUnit || 'CFT'}</dt>
+                      <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.billableSFT || 0).toFixed(3) : formatCFT(pResult.billable)}</dd>
+                    </div>
+                  </>
+                ) : (
+                  <div className="quote-emphasis-row">
+                    <dt>Total {pRates.rateUnit || 'CFT'}</dt>
+                    <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.totalSFT || 0).toFixed(3) : formatCFT(pResult.totalCFT)}</dd>
+                  </div>
+                )}
               </dl>
             </section>
           </div>
@@ -296,7 +314,13 @@ export default function QuoteSheet({
               <span className="quote-total-value">{formatINR(finalTotalVal)}</span>
             </strong>
             <small>
-              Wood ({wRates.profitPct ?? 20}%) + Ply ({pRates.profitPct ?? 20}%) Profit
+              {((wRates.profitPct ?? 0) > 0 || (pRates.profitPct ?? 0) > 0) ? (
+                <>
+                  Wood ({wRates.profitPct ?? 0}%) + Ply ({pRates.profitPct ?? 0}%) Profit
+                </>
+              ) : (
+                "Excluded Profit Margin"
+              )}
             </small>
           </section>
         </div>
@@ -317,18 +341,27 @@ export default function QuoteSheet({
           <section className="quote-panel">
             <h2>{(activeUseWood ? wRates : pRates).rateUnit || 'CFT'} Summary</h2>
             <dl className="quote-kpi-list">
-              <div>
-                <dt>Net {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</dt>
-                <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.totalSFT : pResult.totalSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.totalCFT : pResult.totalCFT)}</dd>
-              </div>
-              <div>
-                <dt>Waste ({(activeUseWood ? wRates : pRates).wastePct ?? 10}%)</dt>
-                <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.vestSFT : pResult.vestSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.vestCFT : pResult.vestCFT)}</dd>
-              </div>
-              <div className="quote-emphasis-row">
-                <dt>Billable {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</dt>
-                <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.billableSFT : pResult.billableSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.billable : pResult.billable)}</dd>
-              </div>
+              {((activeUseWood ? wRates : pRates).wastePct !== null && (activeUseWood ? wRates : pRates).wastePct !== undefined && (activeUseWood ? wRates : pRates).wastePct > 0) ? (
+                <>
+                  <div>
+                    <dt>Net {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</dt>
+                    <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.totalSFT : pResult.totalSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.totalCFT : pResult.totalCFT)}</dd>
+                  </div>
+                  <div>
+                    <dt>Waste ({(activeUseWood ? wRates : pRates).wastePct}%)</dt>
+                    <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.vestSFT : pResult.vestSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.vestCFT : pResult.vestCFT)}</dd>
+                  </div>
+                  <div className="quote-emphasis-row">
+                    <dt>Billable {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</dt>
+                    <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.billableSFT : pResult.billableSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.billable : pResult.billable)}</dd>
+                  </div>
+                </>
+              ) : (
+                <div className="quote-emphasis-row">
+                  <dt>Total {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</dt>
+                  <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.totalSFT : pResult.totalSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.totalCFT : pResult.totalCFT)}</dd>
+                </div>
+              )}
             </dl>
           </section>
 
@@ -339,7 +372,11 @@ export default function QuoteSheet({
               <span className="quote-total-value">{formatINR(finalTotalVal)}</span>
             </strong>
             <small>
-              Includes {(activeUseWood ? wRates : pRates).profitPct ?? 20}% profit margin
+              {(activeUseWood ? wRates : pRates).profitPct > 0 ? (
+                <>Includes {(activeUseWood ? wRates : pRates).profitPct}% profit margin</>
+              ) : (
+                <>Excluded profit margin</>
+              )}
             </small>
           </section>
         </div>
@@ -436,12 +473,14 @@ export default function QuoteSheet({
                     <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(pResult.subtotal)}</td>
                     <td style={{ py: '6px', textAlign: 'right', fontWeight: 'bold', color: 'var(--accent-wood)' }}>₹ {formatINR(wResult.subtotal + pResult.subtotal)}</td>
                   </tr>
-                  <tr>
-                    <td style={{ py: '6px', fontWeight: 'medium' }}>Profit</td>
-                    <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(wResult.profit)} <span style={{ fontSize: '8px', color: '#64748b' }}>({wResult.profitPct}%)</span></td>
-                    <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(pResult.profit)} <span style={{ fontSize: '8px', color: '#64748b' }}>({pResult.profitPct}%)</span></td>
-                    <td style={{ py: '6px', textAlign: 'right', fontWeight: 'bold' }}>₹ {formatINR(wResult.profit + pResult.profit)}</td>
-                  </tr>
+                  {(wResult.profitPct > 0 || pResult.profitPct > 0) && (
+                    <tr>
+                      <td style={{ py: '6px', fontWeight: 'medium' }}>Profit</td>
+                      <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(wResult.profit)} <span style={{ fontSize: '8px', color: '#64748b' }}>({wResult.profitPct}%)</span></td>
+                      <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(pResult.profit)} <span style={{ fontSize: '8px', color: '#64748b' }}>({pResult.profitPct}%)</span></td>
+                      <td style={{ py: '6px', textAlign: 'right', fontWeight: 'bold' }}>₹ {formatINR(wResult.profit + pResult.profit)}</td>
+                    </tr>
+                  )}
                   <tr className="quote-grand-row" style={{ borderTop: '2px solid #1e293b' }}>
                     <td style={{ py: '8px', fontWeight: 'bold' }}>Total Quote</td>
                     <td style={{ py: '8px', textAlign: 'right', fontWeight: 'bold' }}>₹ {formatINR(wResult.finalTotal)}</td>
@@ -452,8 +491,8 @@ export default function QuoteSheet({
               </table>
 
               <div className="quote-rate-note flex flex-col gap-1 text-[9px] mt-3 border-t pt-2" style={{ borderColor: '#cbd5e1' }}>
-                <span>• Wood: ₹ {formatINR(wRates.cftRate)} / {wRates.rateUnit || 'CFT'} wood rate (Net + {wRates.wastePct ?? 10}% waste = billable)</span>
-                <span>• Plywood: ₹ {formatINR(pRates.cftRate)} / {pRates.rateUnit || 'CFT'} plywood rate (Net + {pRates.wastePct ?? 10}% waste = billable)</span>
+                <span>• Wood: ₹ {formatINR(wRates.cftRate)} / {wRates.rateUnit || 'CFT'} wood rate {wRates.wastePct > 0 ? `(Net + ${wRates.wastePct}% waste = billable)` : ''}</span>
+                <span>• Plywood: ₹ {formatINR(pRates.cftRate)} / {pRates.rateUnit || 'CFT'} plywood rate {pRates.wastePct > 0 ? `(Net + ${pRates.wastePct}% waste = billable)` : ''}</span>
               </div>
             </section>
           </div>
@@ -496,16 +535,20 @@ export default function QuoteSheet({
               <tbody>
                 <tr className="quote-volume-row">
                   <th>Net {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</th>
-                  <td>{formatCFT(activeUseWood ? wResult.totalCFT : pResult.totalCFT)}</td>
+                  <td>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.totalSFT : pResult.totalSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.totalCFT : pResult.totalCFT)}</td>
                 </tr>
-                <tr className="quote-volume-row">
-                  <th>Waste Factor ({(activeUseWood ? wRates : pRates).wastePct ?? 10}%)</th>
-                  <td>+ {formatCFT(activeUseWood ? wResult.vestCFT : pResult.vestCFT)}</td>
-                </tr>
-                <tr className="quote-volume-row quote-billable-row">
-                  <th>Billable {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</th>
-                  <td>{formatCFT(activeUseWood ? wResult.billable : pResult.billable)}</td>
-                </tr>
+                {((activeUseWood ? wRates : pRates).wastePct > 0) && (
+                  <>
+                    <tr className="quote-volume-row">
+                      <th>Waste Factor ({(activeUseWood ? wRates : pRates).wastePct}%)</th>
+                      <td>+ {formatCFT(activeUseWood ? wResult.vestCFT : pResult.vestCFT)}</td>
+                    </tr>
+                    <tr className="quote-volume-row quote-billable-row">
+                      <th>Billable {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</th>
+                      <td>{formatCFT(activeUseWood ? wResult.billable : pResult.billable)}</td>
+                    </tr>
+                  </>
+                )}
                 {costLines.map((line) => (
                   <tr key={line.label}>
                     <th>{line.label}</th>
@@ -516,10 +559,12 @@ export default function QuoteSheet({
                   <th>Subtotal</th>
                   <td>₹ {formatINR(activeUseWood ? wResult.subtotal : pResult.subtotal)}</td>
                 </tr>
-                <tr>
-                  <th>Profit ({(activeUseWood ? wRates : pRates).profitPct ?? 20}%)</th>
-                  <td>₹ {formatINR(activeUseWood ? wResult.profit : pResult.profit)}</td>
-                </tr>
+                {((activeUseWood ? wRates : pRates).profitPct > 0) && (
+                  <tr>
+                    <th>Profit ({(activeUseWood ? wRates : pRates).profitPct}%)</th>
+                    <td>₹ {formatINR(activeUseWood ? wResult.profit : pResult.profit)}</td>
+                  </tr>
+                )}
                 <tr className="quote-grand-row">
                   <th>Total</th>
                   <td>₹ {formatINR(finalTotalVal)}</td>
@@ -529,8 +574,12 @@ export default function QuoteSheet({
 
             <div className="quote-rate-note">
               <span>₹ {formatINR((activeUseWood ? wRates : pRates).cftRate)} / {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'} rate</span>
-              <span>•</span>
-              <span>Net + {(activeUseWood ? wRates : pRates).wastePct ?? 10}% waste = billable</span>
+              {((activeUseWood ? wRates : pRates).wastePct > 0) && (
+                <>
+                  <span>•</span>
+                  <span>Net + {(activeUseWood ? wRates : pRates).wastePct}% waste = billable</span>
+                </>
+              )}
             </div>
           </section>
         </div>
