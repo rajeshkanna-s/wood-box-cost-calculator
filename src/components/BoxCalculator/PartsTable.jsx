@@ -193,45 +193,63 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
       {/* CFT Summary Footer */}
       <div style={{ borderTop: '1px solid var(--table-border)', padding: compact ? '0.75rem 1rem' : '1rem 1.5rem' }} className="mt-auto">
         <div className="space-y-2">
-          <div className="flex justify-between items-center text-sm" style={{ fontSize: compact ? '11px' : undefined }}>
-            <span style={{ color: 'var(--text-light)' }}>Net Volume / Area</span>
-            <span className="font-mono font-medium" style={{ color: 'var(--text-main)' }}>
-              {formatCFT(result.totalCFT)} CFT
-              {isPlywood && (
-                <span className="text-blue-600 dark:text-blue-400 font-bold ml-2">
-                  • {Number(result.totalSFT || 0).toFixed(compact ? 2 : 3)} SFT
+          {safeWastePct !== null && safeWastePct !== undefined && safeWastePct > 0 ? (
+            <>
+              <div className="flex justify-between items-center text-sm" style={{ fontSize: compact ? '11px' : undefined }}>
+                <span style={{ color: 'var(--text-light)' }}>Net Volume / Area</span>
+                <span className="font-mono font-medium" style={{ color: 'var(--text-main)' }}>
+                  {formatCFT(result.totalCFT)} CFT
+                  {isPlywood && (
+                    <span className="text-blue-600 dark:text-blue-400 font-bold ml-2">
+                      • {Number(result.totalSFT || 0).toFixed(compact ? 2 : 3)} SFT
+                    </span>
+                  )}
                 </span>
-              )}
-            </span>
-          </div>
-          <div className="flex justify-between items-center text-sm" style={{ fontSize: compact ? '11px' : undefined }}>
-            <span className="flex items-center gap-1.5" style={{ color: 'var(--text-light)' }}>
-              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-wood)' }} />
-              + {safeWastePct}% Waste Factor
-            </span>
-            <span className="font-mono" style={{ color: 'var(--text-muted)' }}>
-              {formatCFT(result.vestCFT)} CFT
-              {isPlywood && (
-                <span className="text-blue-600 dark:text-blue-400 font-bold ml-2">
-                  • {Number(result.vestSFT || 0).toFixed(compact ? 2 : 3)} SFT
+              </div>
+              <div className="flex justify-between items-center text-sm" style={{ fontSize: compact ? '11px' : undefined }}>
+                <span className="flex items-center gap-1.5" style={{ color: 'var(--text-light)' }}>
+                  <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-wood)' }} />
+                  + {safeWastePct}% Waste Factor
                 </span>
-              )}
-            </span>
-          </div>
-          <div className="glow-line my-2" />
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold" style={{ color: 'var(--accent-wood)', fontSize: compact ? '11px' : undefined }}>
-              Billable Volume / Area
-            </span>
-            <span className="font-mono text-lg font-bold" style={{ color: 'var(--accent-wood-light)', fontSize: compact ? '1rem' : undefined }}>
-              {formatCFT(result.billable)} CFT
-              {isPlywood && (
-                <span className="text-blue-600 dark:text-blue-400 font-extrabold ml-2">
-                  • {Number(result.billableSFT || 0).toFixed(compact ? 2 : 3)} SFT
+                <span className="font-mono" style={{ color: 'var(--text-muted)' }}>
+                  {formatCFT(result.vestCFT)} CFT
+                  {isPlywood && (
+                    <span className="text-blue-600 dark:text-blue-400 font-bold ml-2">
+                      • {Number(result.vestSFT || 0).toFixed(compact ? 2 : 3)} SFT
+                    </span>
+                  )}
                 </span>
-              )}
-            </span>
-          </div>
+              </div>
+              <div className="glow-line my-2" />
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-semibold" style={{ color: 'var(--accent-wood)', fontSize: compact ? '11px' : undefined }}>
+                  Billable Volume / Area
+                </span>
+                <span className="font-mono text-lg font-bold" style={{ color: 'var(--accent-wood-light)', fontSize: compact ? '1rem' : undefined }}>
+                  {formatCFT(result.billable)} CFT
+                  {isPlywood && (
+                    <span className="text-blue-600 dark:text-blue-400 font-extrabold ml-2">
+                      • {Number(result.billableSFT || 0).toFixed(compact ? 2 : 3)} SFT
+                    </span>
+                  )}
+                </span>
+              </div>
+            </>
+          ) : (
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-semibold" style={{ color: 'var(--accent-wood)', fontSize: compact ? '11px' : undefined }}>
+                Total Volume / Area
+              </span>
+              <span className="font-mono text-lg font-bold" style={{ color: 'var(--accent-wood-light)', fontSize: compact ? '1rem' : undefined }}>
+                {formatCFT(result.totalCFT)} CFT
+                {isPlywood && (
+                  <span className="text-blue-600 dark:text-blue-400 font-extrabold ml-2">
+                    • {Number(result.totalSFT || 0).toFixed(compact ? 2 : 3)} SFT
+                  </span>
+                )}
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

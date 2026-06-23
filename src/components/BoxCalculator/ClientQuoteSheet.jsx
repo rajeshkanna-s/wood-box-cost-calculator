@@ -423,8 +423,8 @@ export default function ClientQuoteSheet({
                           </tr>
                           <tr className="quote-volume-row">
                             <td style={{ fontWeight: 'semibold' }}>Waste Factor</td>
-                            <td style={{ textAlign: 'right' }}>+ {wRates.rateUnit === 'SFT' ? Number(wResult.vestSFT || 0).toFixed(3) : formatCFT(wResult.vestCFT)} <span style={{ fontSize: '8px', color: '#64748b' }}>({wResult.wastePct}%)</span></td>
-                            <td style={{ textAlign: 'right' }}>+ {pRates.rateUnit === 'SFT' ? Number(pResult.vestSFT || 0).toFixed(3) : formatCFT(pResult.vestCFT)} <span style={{ fontSize: '8px', color: '#64748b' }}>({pResult.wastePct}%)</span></td>
+                            <td style={{ textAlign: 'right' }}>+ {wRates.rateUnit === 'SFT' ? Number(wResult.vestSFT || 0).toFixed(3) : formatCFT(wResult.vestCFT)} <span style={{ fontSize: '8px', color: '#64748b' }}>({wRates.wastePct}%)</span></td>
+                            <td style={{ textAlign: 'right' }}>+ {pRates.rateUnit === 'SFT' ? Number(pResult.vestSFT || 0).toFixed(3) : formatCFT(pResult.vestCFT)} <span style={{ fontSize: '8px', color: '#64748b' }}>({pRates.wastePct}%)</span></td>
                             <td style={{ textAlign: 'right', fontWeight: 'bold' }}>-</td>
                           </tr>
                           <tr className="quote-volume-row quote-billable-row">

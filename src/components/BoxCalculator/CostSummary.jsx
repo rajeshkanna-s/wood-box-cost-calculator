@@ -142,12 +142,14 @@ export default function CostSummary({
               </tr>
 
               {/* Profit */}
-              <tr className="font-semibold text-emerald-500">
-                <td className="py-3 text-sm">Profit</td>
-                <td className="py-3 text-right font-mono text-sm">₹ {formatINR(woodResult.profit)} <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>({woodResult.profitPct}%)</span></td>
-                <td className="py-3 text-right font-mono text-sm">₹ {formatINR(plyResult.profit)} <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>({plyResult.profitPct}%)</span></td>
-                <td className="py-3 text-right font-mono text-sm font-bold">₹ {formatINR(woodResult.profit + plyResult.profit)}</td>
-              </tr>
+              {((woodResult.profitPct ?? 0) > 0 || (plyResult.profitPct ?? 0) > 0) && (
+                <tr className="font-semibold text-emerald-500">
+                  <td className="py-3 text-sm">Profit</td>
+                  <td className="py-3 text-right font-mono text-sm">₹ {formatINR(woodResult.profit)} <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>({woodResult.profitPct}%)</span></td>
+                  <td className="py-3 text-right font-mono text-sm">₹ {formatINR(plyResult.profit)} <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>({plyResult.profitPct}%)</span></td>
+                  <td className="py-3 text-right font-mono text-sm font-bold">₹ {formatINR(woodResult.profit + plyResult.profit)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -190,13 +192,15 @@ export default function CostSummary({
             <span className="text-sm font-medium" style={{ color: 'var(--text-main)' }}>Subtotal</span>
             <span className="font-mono text-sm font-semibold" style={{ color: 'var(--text-main)' }}>₹ {formatINR(result.subtotal)}</span>
           </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium flex items-center gap-1.5" style={{ color: 'var(--accent-emerald)' }}>
-              <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-emerald)' }} />
-              Profit ({result.profitPct !== undefined ? result.profitPct : 20}%)
-            </span>
-            <span className="font-mono text-sm font-semibold" style={{ color: 'var(--accent-emerald)' }}>+ ₹ {formatINR(result.profit)}</span>
-          </div>
+          {result.profitPct !== null && result.profitPct !== undefined && result.profitPct > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-medium flex items-center gap-1.5" style={{ color: 'var(--accent-emerald)' }}>
+                <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-emerald)' }} />
+                Profit ({result.profitPct}%)
+              </span>
+              <span className="font-mono text-sm font-semibold" style={{ color: 'var(--accent-emerald)' }}>+ ₹ {formatINR(result.profit)}</span>
+            </div>
+          )}
         </div>
       )}
 
