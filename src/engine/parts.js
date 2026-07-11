@@ -116,7 +116,6 @@ export function buildPineWoodPalletParts(lengthInch, widthInch, heightInch, thic
   return [
     { id: 'TOP',   label: 'Top Planks (TOP)',   l: Lmm + 50, w: 100, h: thickness, qty: 7, isPly: false },
     { id: 'LEG',   label: 'Leg Planks (LEG)',   l: Wmm + 50, w: 100, h: thickness, qty: 3, isPly: false },
-    { id: 'BACK',  label: 'Back Planks (BACK)', l: Lmm + 50, w: 100, h: thickness, qty: 3, isPly: false },
     { id: 'BLOOK', label: 'Leg Blocks (BLOOK)', l: 100,      w: 100, h: blockHeight, qty: 9, isPly: false }
   ];
 }
@@ -125,6 +124,24 @@ export function buildPresetWoodFramingParts(lengthInch, widthInch, heightInch) {
   const Lmm = Math.round(inchToMm(lengthInch));
   const Wmm = Math.round(inchToMm(widthInch));
   const Hmm = Math.round(inchToMm(heightInch));
+
+  // Special case for 1170x810x480 Pine Plywood Box preset (Table 4 in Excel has custom wood dimensions and duplicate block rows)
+  if (Lmm === 1170 && Wmm === 810 && Hmm === 480) {
+    return [
+      { id: 'TR',    label: 'Top Reaper (TR)',          l: 1270, w: 95, h: 17, qty: 2, isPly: false },
+      { id: 'TS',    label: 'Top Support (TS)',         l: 890,  w: 95, h: 17, qty: 3, isPly: false },
+      { id: 'BR',    label: 'Bottom Reaper (BR)',       l: 1270, w: 95, h: 17, qty: 5, isPly: false },
+      { id: 'BR-W',  label: 'Bottom Reaper W (BR)',     l: 890,  w: 95, h: 17, qty: 3, isPly: false },
+      { id: 'BBS-1', label: 'Bottom Support 1 (BBS)',   l: 890,  w: 95, h: 17, qty: 3, isPly: false },
+      { id: 'SR',    label: 'Side Reaper (SR)',         l: 1270, w: 95, h: 17, qty: 4, isPly: false },
+      { id: 'SS',    label: 'Side Support (SS)',        l: 520,  w: 95, h: 17, qty: 6, isPly: false },
+      { id: 'ES',    label: 'End Support (ES)',         l: 520,  w: 95, h: 17, qty: 6, isPly: false },
+      { id: 'BL-1',  label: 'Leg Block 1 (BL)',         l: 90,   w: 90,  h: 120, qty: 9, isPly: false },
+      { id: 'BL-2',  label: 'Leg Block 2 (BL)',         l: 100,  w: 100, h: 90,  qty: 9, isPly: false }
+    ];
+  }
+
+  const woodThickness = (Lmm === 2170 && Wmm === 500) ? 16 : 19;
 
   // Determine reaper width and support quantities based on Lmm
   const reaperWidth = Lmm > 1200 ? 100 : 75;
@@ -144,43 +161,44 @@ export function buildPresetWoodFramingParts(lengthInch, widthInch, heightInch) {
       erQty = 6;
       esQty = 6;
     } else {
-      brQty = 2;
+      brQty = 5;
       brWQty = 3;
       bbs1Qty = 3;
-      bbs2Qty = 3;
+      bbs2Qty = 0;
       erQty = 4;
-      esQty = 4;
+      esQty = (Lmm === 1170 && Wmm === 810) ? 6 : 4;
     }
   } else {
-    brQty = 4;
+    const isSpecialLarge = (Wmm === 785) || (Lmm === 2170 && Wmm === 500);
+    brQty = isSpecialLarge ? 5 : 4;
     brWQty = 4;
     bbs1Qty = 4;
     bbs2Qty = 0;
     erQty = 4;
-    esQty = 4;
+    esQty = isSpecialLarge ? 6 : 4;
   }
 
   const parts = [
-    { id: 'TR',    label: 'Top Reaper (TR)',          l: Lmm + 100, w: reaperWidth, h: 19, qty: 2, isPly: false },
-    { id: 'TS',    label: 'Top Support (TS)',         l: Wmm + 80,  w: reaperWidth, h: 19, qty: tsQty, isPly: false },
-    { id: 'BR',    label: 'Bottom Reaper (BR)',       l: Lmm + 100, w: reaperWidth, h: 19, qty: brQty, isPly: false }
+    { id: 'TR',    label: 'Top Reaper (TR)',          l: Lmm + 100, w: reaperWidth, h: woodThickness, qty: 2, isPly: false },
+    { id: 'TS',    label: 'Top Support (TS)',         l: Wmm + 80,  w: reaperWidth, h: woodThickness, qty: tsQty, isPly: false },
+    { id: 'BR',    label: 'Bottom Reaper (BR)',       l: Lmm + 100, w: reaperWidth, h: woodThickness, qty: brQty, isPly: false }
   ];
 
   if (brWQty > 0) {
-    parts.push({ id: 'BR-W', label: 'Bottom Reaper W (BR)', l: Wmm + 80, w: reaperWidth, h: 19, qty: brWQty, isPly: false });
+    parts.push({ id: 'BR-W', label: 'Bottom Reaper W (BR)', l: Wmm + 80, w: reaperWidth, h: woodThickness, qty: brWQty, isPly: false });
   }
 
-  parts.push({ id: 'BBS-1', label: 'Bottom Support 1 (BBS)', l: Wmm + 80, w: reaperWidth, h: 19, qty: bbs1Qty, isPly: false });
+  parts.push({ id: 'BBS-1', label: 'Bottom Support 1 (BBS)', l: Wmm + 80, w: reaperWidth, h: woodThickness, qty: bbs1Qty, isPly: false });
 
   if (bbs2Qty > 0) {
-    parts.push({ id: 'BBS-2', label: 'Bottom Support 2 (BBS)', l: Wmm + 80, w: reaperWidth, h: 19, qty: bbs2Qty, isPly: false });
+    parts.push({ id: 'BBS-2', label: 'Bottom Support 2 (BBS)', l: Wmm + 80, w: reaperWidth, h: woodThickness, qty: bbs2Qty, isPly: false });
   }
 
   parts.push(
-    { id: 'SR',    label: 'Side Reaper (SR)',         l: Lmm + 100, w: reaperWidth, h: 19, qty: 4, isPly: false },
-    { id: 'SS',    label: 'Side Support (SS)',        l: Hmm + 40,  w: reaperWidth, h: 19, qty: ssQty, isPly: false },
-    { id: 'ER',    label: 'End Reaper (ER)',          l: Wmm,       w: reaperWidth, h: 19, qty: erQty, isPly: false },
-    { id: 'ES',    label: 'End Support (ES)',         l: Hmm + 40,  w: reaperWidth, h: 19, qty: esQty, isPly: false },
+    { id: 'SR',    label: 'Side Reaper (SR)',         l: Lmm + 100, w: reaperWidth, h: woodThickness, qty: 4, isPly: false },
+    { id: 'SS',    label: 'Side Support (SS)',        l: Hmm + 40,  w: reaperWidth, h: woodThickness, qty: ssQty, isPly: false },
+    { id: 'ER',    label: 'End Reaper (ER)',          l: Wmm,       w: reaperWidth, h: woodThickness, qty: erQty, isPly: false },
+    { id: 'ES',    label: 'End Support (ES)',         l: Hmm + 40,  w: reaperWidth, h: woodThickness, qty: esQty, isPly: false },
     { id: 'BL',    label: 'Leg Block (BL)',           l: 100,       w: 100,        h: 90, qty: blQty, isPly: false }
   );
 
