@@ -34,7 +34,7 @@ export function buildPlywoodPalletParts(lengthInch, widthInch, heightInch) {
   const Wmm = Math.round(inchToMm(widthInch));
   const Hmm = Math.round(inchToMm(heightInch));
   const plyThickness = 12;
-  const blockHeight = Hmm > 100 ? Hmm - (3 * plyThickness) : 90;
+  const blockHeight = 90;
   
   return [
     { id: 'TOP',  label: 'Top Ply Deck (TOP)',   l: Lmm, w: Wmm, h: plyThickness, qty: 1, isPly: true },
