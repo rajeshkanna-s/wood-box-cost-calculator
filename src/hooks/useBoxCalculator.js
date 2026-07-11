@@ -62,7 +62,47 @@ export function useBoxCalculator() {
   const { state: activeState, setter: activeSetter } = getActiveData();
 
   // Helper to generate default parts based on active tab and dimensions
-  const getGeneratedParts = (tab, l, w, h, unit, thicknessVal = null) => {
+  const getGeneratedParts = (tab, l, w, h, unit) => {
+    if (unit === 'cft') {
+      const isPlyTab = tab === 'ply-wood-pallet';
+      return [
+        {
+          id: 'CFT-INPUT',
+          label: isPlyTab ? 'Entered Custom Volume (SFT Equivalent)' : 'Entered Custom Volume (CFT)',
+          l: 0,
+          w: 0,
+          h: 0,
+          qty: 1,
+          isCustom: true,
+          isExcluded: false,
+          isPly: isPlyTab,
+          cft: isPlyTab ? 0 : l,
+          sft: isPlyTab ? l : 0
+        }
+      ];
+    }
+
+    if (unit === 'sft') {
+      const isPlyTab = tab === 'ply-wood-pallet' || tab === 'pine-plywood-box';
+      const cftVal = isPlyTab ? 0 : (l * (h / 25.4) / 12);
+      const sftVal = isPlyTab ? l : 0;
+      return [
+        {
+          id: 'SFT-INPUT',
+          label: isPlyTab ? 'Entered Custom Area (SFT)' : `Entered Custom Area (SFT) × Thickness (${h}mm)`,
+          l: 0,
+          w: 0,
+          h: 0,
+          qty: 1,
+          isCustom: true,
+          isExcluded: false,
+          isPly: isPlyTab,
+          cft: cftVal,
+          sft: sftVal
+        }
+      ];
+    }
+
     const lIn = convertToInches(l, unit);
     const wIn = convertToInches(w, unit);
     const hIn = convertToInches(h, unit);
@@ -112,16 +152,36 @@ export function useBoxCalculator() {
       const oldUnit = prev.dims.unit || 'in';
       if (oldUnit === newUnit) return prev;
 
-      const lInches = convertToInches(prev.dims.l, oldUnit);
-      const wInches = convertToInches(prev.dims.w, oldUnit);
-      const hInches = convertToInches(prev.dims.h, oldUnit);
+      const isCustomUnit = (u) => u === 'cft' || u === 'sft';
 
-      const nextDims = {
-        unit: newUnit,
-        l: Number(convertFromInches(lInches, newUnit).toFixed(2)),
-        w: Number(convertFromInches(wInches, newUnit).toFixed(2)),
-        h: Number(convertFromInches(hInches, newUnit).toFixed(2)),
-      };
+      let nextDims;
+      if (isCustomUnit(oldUnit) || isCustomUnit(newUnit)) {
+        if (newUnit === 'cft') {
+          nextDims = { unit: 'cft', l: 10, w: 0, h: 0 };
+        } else if (newUnit === 'sft') {
+          nextDims = { unit: 'sft', l: 100, w: 0, h: 16 };
+        } else {
+          // Revert to sensible defaults for physical dimensions
+          const defaultPresets = {
+            'pine-wood-box': { l: 75, w: 35, h: 35, unit: 'in' },
+            'ply-wood-pallet': { l: 1200, w: 1100, h: 195, unit: 'mm' },
+            'pine-wood-pallet': { l: 1150, w: 1150, h: 150, unit: 'mm' },
+            'pine-plywood-box': { l: 1140, w: 800, h: 195, unit: 'mm' }
+          };
+          nextDims = defaultPresets[activeTab] || { l: 75, w: 35, h: 35, unit: 'in' };
+        }
+      } else {
+        const lInches = convertToInches(prev.dims.l, oldUnit);
+        const wInches = convertToInches(prev.dims.w, oldUnit);
+        const hInches = convertToInches(prev.dims.h, oldUnit);
+
+        nextDims = {
+          unit: newUnit,
+          l: Number(convertFromInches(lInches, newUnit).toFixed(2)),
+          w: Number(convertFromInches(wInches, newUnit).toFixed(2)),
+          h: Number(convertFromInches(hInches, newUnit).toFixed(2)),
+        };
+      }
 
       const nextParts = getGeneratedParts(activeTab, nextDims.l, nextDims.w, nextDims.h, nextDims.unit);
 
@@ -160,8 +220,19 @@ export function useBoxCalculator() {
       const textFields = ['id', 'label'];
       const nextValue = textFields.includes(field) ? value : (Number(value) || 0);
       newParts[index] = { ...newParts[index], [field]: nextValue };
+
+      // Sync custom input parts back to dims.l
+      let nextDims = prev.dims;
+      const part = newParts[index];
+      if (part.id === 'CFT-INPUT' && field === 'cft') {
+        nextDims = { ...prev.dims, l: nextValue };
+      } else if (part.id === 'SFT-INPUT' && field === 'sft') {
+        nextDims = { ...prev.dims, l: nextValue };
+      }
+
       return {
         ...prev,
+        dims: nextDims,
         parts: newParts
       };
     });

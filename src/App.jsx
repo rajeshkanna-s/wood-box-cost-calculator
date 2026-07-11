@@ -354,6 +354,7 @@ export default function App() {
               parts={parts}
               result={result}
               rates={rates}
+              dims={dims}
               onUpdatePart={updatePart}
               onAddPart={addCustomPart}
               onRemovePart={removePart}

@@ -52,17 +52,18 @@ export default function DimensionInputs({
             <h2 className="section-title mr-2">Dimensions</h2>
           </div>
           <select
-            value={currentUnit}
-            onChange={(e) => onUnitChange(e.target.value)}
-            className="header-unit-select"
-          >
-            <option value="in">Inch (in)</option>
-            <option value="mm">Millimeter (mm)</option>
-            <option value="cm">Centimeter (cm)</option>
-            <option value="ft">Feet (ft)</option>
-            <option value="m">Meter (m)</option>
-            {isPlywood && <option value="sft">Square Feet (sft)</option>}
-          </select>
+          value={currentUnit}
+          onChange={(e) => onUnitChange(e.target.value)}
+          className="header-unit-select"
+        >
+          <option value="in">Inch (in)</option>
+          <option value="mm">Millimeter (mm)</option>
+          <option value="cm">Centimeter (cm)</option>
+          <option value="ft">Feet (ft)</option>
+          <option value="m">Meter (m)</option>
+          <option value="cft">Cubic Feet (cft)</option>
+          <option value="sft">Square Feet (sft)</option>
+        </select>
         </div>
         {isReperType && (
           <span className="badge badge-wood">
@@ -91,7 +92,11 @@ export default function DimensionInputs({
               <div style={{ borderTop: '1px solid var(--table-border)', marginBottom: '0.25rem' }} />
             </>
           )}
-          {currentUnit === 'sft' ? (
+          {currentUnit === 'cft' ? (
+            <>
+              <InputRow label="Total Volume" value={dims.l} onChange={(v) => onChange('l', v)} unit="CFT" min="0.1" step="0.5" />
+            </>
+          ) : currentUnit === 'sft' ? (
             <>
               <InputRow label="Total Area" value={dims.l} onChange={(v) => onChange('l', v)} unit="SFT" min="0.1" step="0.5" />
               <div style={{ borderTop: '1px solid var(--table-border)' }} />
@@ -122,7 +127,7 @@ export default function DimensionInputs({
         </div>
 
         {/* mm or inch Conversion Panel */}
-        {currentUnit !== 'sft' && (
+        {currentUnit !== 'sft' && currentUnit !== 'cft' && (
           <div className="mt-auto pt-5">
             <div className="glass-card-inner p-4">
               <div className="flex items-center gap-2 mb-3">

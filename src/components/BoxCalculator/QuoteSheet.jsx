@@ -56,17 +56,19 @@ export default function QuoteSheet({
 
   const wIsMm = dims?.unit === 'mm';
   const isSft = dims?.unit === 'sft';
+  const isCft = dims?.unit === 'cft';
 
   // Format dimensions string
   const getDimsString = (d) => {
-    if (isSft) return `${formatDimension(d.l)} Sq.Ft (SFT) × ${formatDimension(d.h)} mm`;
-    const u = d.unit || 'in';
+    if (d?.unit === 'cft') return `${formatDimension(d.l)} Cubic Feet (CFT)`;
+    if (d?.unit === 'sft') return `${formatDimension(d.l)} Sq.Ft (SFT) × ${formatDimension(d.h)} mm`;
+    const u = d?.unit || 'in';
     return `${formatDimension(d.l)} × ${formatDimension(d.w)} × ${formatDimension(d.h)} ${u}`;
   };
 
   const getDimsConvertedString = (d) => {
-    if (isSft) return '';
-    const u = d.unit || 'in';
+    if (d?.unit === 'sft' || d?.unit === 'cft') return '';
+    const u = d?.unit || 'in';
     if (u === 'mm') {
       return `${formatDimension(d.l / 25.4)} × ${formatDimension(d.w / 25.4)} × ${formatDimension(d.h / 25.4)} in`;
     } else {

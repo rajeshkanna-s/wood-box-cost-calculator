@@ -1,4 +1,4 @@
-export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPart, onRemovePart, onToggleExclusion, compact = false, type = 'pine-wood-box' }) {
+export default function PartsTable({ parts, result, rates, dims, onUpdatePart, onAddPart, onRemovePart, onToggleExclusion, compact = false, type = 'pine-wood-box' }) {
   const formatCFT = (n) => Number(n || 0).toFixed(compact ? 3 : 4);
   const isCombined = type === 'ply-wood-pallet' || type === 'pine-plywood-box';
   const isPlywoodOnly = false; // We don't have a plywood-only tab (all tabs are wood-only or combined)
@@ -149,7 +149,27 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
                     />
                   </td>
                   <td style={tdStyle(false, true, { color: 'var(--text-main)', textAlign: 'right' })} className="font-mono font-semibold">
-                    {p.isPly ? `${Number(p.sft || 0).toFixed(compact ? 1 : 2)} SFT` : `${formatCFT(p.cft)} CFT`}
+                    {p.isCustom || (dims?.unit === 'cft' || dims?.unit === 'sft') ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <input
+                          type="number"
+                          step="0.0001"
+                          className="table-input text-right font-mono"
+                          style={{ 
+                            width: '90px', 
+                            height: compact ? '1.5rem' : '1.75rem',
+                            padding: '0.125rem 0.25rem',
+                            color: 'var(--text-main)'
+                          }}
+                          value={p.isPly ? (p.sft || 0) : (p.cft || 0)}
+                          onChange={(e) => onUpdatePart(i, p.isPly ? 'sft' : 'cft', e.target.value)}
+                          disabled={p.isExcluded}
+                        />
+                        <span className="text-[10px] ml-1 text-xs" style={{ color: 'var(--text-light)' }}>{p.isPly ? 'SFT' : 'CFT'}</span>
+                      </div>
+                    ) : (
+                      p.isPly ? `${Number(p.sft || 0).toFixed(compact ? 1 : 2)} SFT` : `${formatCFT(p.cft)} CFT`
+                    )}
                   </td>
                   <td style={{ paddingRight: compact ? '0.5rem' : '1rem', width: compact ? '40px' : '60px' }}>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
