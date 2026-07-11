@@ -62,7 +62,7 @@ export function useBoxCalculator() {
   const { state: activeState, setter: activeSetter } = getActiveData();
 
   // Helper to generate default parts based on active tab and dimensions
-  const getGeneratedParts = (tab, l, w, h, unit) => {
+  const getGeneratedParts = (tab, l, w, h, unit, thicknessOverride) => {
     if (unit === 'cft') {
       const isPlyTab = tab === 'ply-wood-pallet';
       return [
@@ -148,7 +148,7 @@ export function useBoxCalculator() {
       case 'ply-wood-pallet':
         return buildPlywoodPalletParts(lIn, wIn, hIn);
       case 'pine-wood-pallet':
-        return buildPineWoodPalletParts(lIn, wIn, hIn);
+        return buildPineWoodPalletParts(lIn, wIn, hIn, thicknessOverride);
       case 'pine-plywood-box':
         return buildPinePlywoodBoxParts(lIn, wIn, hIn);
       default:
@@ -236,9 +236,10 @@ export function useBoxCalculator() {
         unit: targetUnit,
         l: preset.l,
         w: preset.w,
-        h: preset.h
+        h: preset.h,
+        th: preset.th || undefined
       };
-      const nextParts = getGeneratedParts(activeTab, nextDims.l, nextDims.w, nextDims.h, nextDims.unit);
+      const nextParts = getGeneratedParts(activeTab, nextDims.l, nextDims.w, nextDims.h, nextDims.unit, preset.th);
 
       // Preset-specific rates for plywood pallet to match spreadsheets exactly
       let nextRates = prev.rates;
@@ -322,17 +323,26 @@ export function useBoxCalculator() {
           };
         }
       } else if (activeTab === 'pine-wood-pallet') {
-        const key = `${preset.l}x${preset.w}x${preset.h}`;
+        const th = preset.th || 17;
+        const key = `${preset.l}x${preset.w}x${preset.h}x${th}`;
         const pineWoodPalletRateOverrides = {
-          '1140x1080x130': { transport: 30 },
-          '1150x1150x150': { transport: 60 },
-          '950x1150x150':  { transport: 60 },
-          '1000x1050x150': { transport: 60 },
-          '1150x950x150':  { transport: 55, profitPct: 15 },
+          // Sheet1 (17mm) overrides
+          '1140x1080x130x17': { transport: 30 },
+          '1150x1150x150x22': { transport: 60 },
+          '950x1150x150x22':  { transport: 60 },
+          '1000x1050x150x22': { transport: 60 },
+          '1150x950x150x22':  { transport: 55, profitPct: 15 },
+          // Sheet3 (16mm, 130mm height) overrides
+          '1140x1080x130x16': { transport: 30, profitPct: 15 },
+          // Sheet4 (16mm, 150mm height) overrides
+          '1150x1150x150x16': { transport: 60 },
+          '950x1150x150x16':  { transport: 60 },
+          '1000x1050x150x16': { transport: 60 },
+          '1150x950x150x16':  { transport: 55 },
         };
         const overrides = pineWoodPalletRateOverrides[key];
         if (overrides) {
-          nextRates = { ...prev.rates, ...overrides };
+          nextRates = { ...DEFAULT_PINE_WOOD_PALLET_RATES, ...overrides };
         } else {
           // Reset to defaults for presets without overrides
           nextRates = { ...DEFAULT_PINE_WOOD_PALLET_RATES };

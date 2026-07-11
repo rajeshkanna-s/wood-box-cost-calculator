@@ -44,11 +44,51 @@ export function buildPlywoodPalletParts(lengthInch, widthInch, heightInch) {
   ];
 }
 
-export function buildPineWoodPalletParts(lengthInch, widthInch, heightInch) {
+export function buildPineWoodPalletParts(lengthInch, widthInch, heightInch, thicknessOverride) {
   const Lmm = Math.round(inchToMm(lengthInch));
   const Wmm = Math.round(inchToMm(widthInch));
   const Hmm = Math.round(inchToMm(heightInch));
   
+  // If 16mm thickness override is provided, use Sheet3/Sheet4 variant (plank width=75)
+  if (thicknessOverride === 16) {
+    // Sheet3/Sheet4 special case: 1140 × 1080 × 130 (16mm)
+    if (Lmm === 1140 && Wmm === 1080 && Hmm === 130) {
+      return [
+        { id: 'TOP',   label: 'Top Planks (TOP)',   l: 1140, w: 75, h: 16, qty: 7, isPly: false },
+        { id: 'LEG',   label: 'Leg Planks (LEG)',   l: 1080, w: 75, h: 16, qty: 3, isPly: false },
+        { id: 'BACK',  label: 'Back Planks (BACK)', l: 1140, w: 75, h: 16, qty: 3, isPly: false },
+        { id: 'BLOOK', label: 'Leg Blocks (BLOOK)', l: 75,   w: 75, h: 95, qty: 9, isPly: false }
+      ];
+    }
+    // Sheet4 special case: 1150 × 950 × 150 (16mm)
+    if (Lmm === 1150 && Wmm === 950 && Hmm === 150) {
+      return [
+        { id: 'TOP-1',   label: 'Top Planks 1 (TOP)',     l: 1200, w: 75, h: 16, qty: 7, isPly: false },
+        { id: 'TOP-2',   label: 'Top Planks 2 (TOP)',     l: 1000, w: 75, h: 16, qty: 3, isPly: false },
+        { id: 'LEG',     label: 'Leg Planks (LEG)',       l: 1000, w: 75, h: 16, qty: 2, isPly: false },
+        { id: 'BACK',    label: 'Back Planks (BACK)',     l: 1200, w: 75, h: 16, qty: 3, isPly: false },
+        { id: 'BLOOK-1', label: 'Leg Blocks 1 (BLOOK)',  l: 120,  w: 75, h: 16, qty: 6, isPly: false },
+        { id: 'BLOOK-2', label: 'Leg Blocks 2 (BLOOK)',  l: 75,   w: 75, h: 95, qty: 3, isPly: false }
+      ];
+    }
+    // 16mm generic: block dimensions vary by preset
+    // Sheet3 (130mm height): block = 78×75×95
+    // Sheet4 (150mm height): block = 75×75×95 or 100×75×95
+    const blockL16 = (() => {
+      if (Hmm <= 135) return 78; // Sheet3: all use 78
+      // Sheet4: 1000mm L or W presets use 100, others use 75
+      if (Lmm === 1000) return 100;
+      return 75;
+    })();
+    return [
+      { id: 'TOP',   label: 'Top Planks (TOP)',   l: Lmm + 50, w: 75, h: 16, qty: 7, isPly: false },
+      { id: 'LEG',   label: 'Leg Planks (LEG)',   l: Wmm + 50, w: 75, h: 16, qty: 3, isPly: false },
+      { id: 'BACK',  label: 'Back Planks (BACK)', l: Lmm + 50, w: 75, h: 16, qty: 3, isPly: false },
+      { id: 'BLOOK', label: 'Leg Blocks (BLOOK)', l: blockL16, w: 75, h: 95, qty: 9, isPly: false }
+    ];
+  }
+
+  // Sheet1/Sheet2 original variants (thickness 17mm or 22mm, plank width 100mm)
   const thickness = Hmm <= 135 ? 17 : 22;
   const blockHeight = Hmm <= 135 ? 78 : 85;
   

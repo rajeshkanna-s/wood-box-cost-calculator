@@ -35,16 +35,30 @@ export const PLY_WOOD_PALLET_PRESETS = [
 ];
 
 export const PINE_WOOD_PALLET_PRESETS = [
-  { id: 'pwp_wood1',  label: '900 × 1050 × 130', l: 900,  w: 1050, h: 130, unit: 'mm' },
-  { id: 'pwp_wood2',  label: '900 × 1100 × 130', l: 900,  w: 1100, h: 130, unit: 'mm' },
-  { id: 'pwp_wood3',  label: '1000 × 1100 × 130', l: 1000, w: 1100, h: 130, unit: 'mm' },
-  { id: 'pwp_wood4',  label: '1100 × 900 × 130', l: 1100, w: 900,  h: 130, unit: 'mm' },
-  { id: 'pwp_wood5',  label: '1140 × 1080 × 130', l: 1140, w: 1080, h: 130, unit: 'mm' },
-  { id: 'pwp_wood6',  label: '1150 × 1150 × 150', l: 1150, w: 1150, h: 150, unit: 'mm' },
-  { id: 'pwp_wood7',  label: '1000 × 1000 × 150', l: 1000, w: 1000, h: 150, unit: 'mm' },
-  { id: 'pwp_wood8',  label: '950 × 1150 × 150', l: 950,  w: 1150, h: 150, unit: 'mm' },
-  { id: 'pwp_wood9',  label: '1000 × 1050 × 150', l: 1000, w: 1050, h: 150, unit: 'mm' },
-  { id: 'pwp_wood10', label: '1150 × 950 × 150', l: 1150, w: 950,  h: 150, unit: 'mm' }
+  // Sheet1: thickness=17mm, plank width=100mm (height 130)
+  { id: 'pwp_s1_1',  label: '900 × 1050 × 130 (17mm)',  l: 900,  w: 1050, h: 130, unit: 'mm', th: 17 },
+  { id: 'pwp_s1_2',  label: '900 × 1100 × 130 (17mm)',  l: 900,  w: 1100, h: 130, unit: 'mm', th: 17 },
+  { id: 'pwp_s1_3',  label: '1000 × 1100 × 130 (17mm)', l: 1000, w: 1100, h: 130, unit: 'mm', th: 17 },
+  { id: 'pwp_s1_4',  label: '1100 × 900 × 130 (17mm)',  l: 1100, w: 900,  h: 130, unit: 'mm', th: 17 },
+  { id: 'pwp_s1_5',  label: '1140 × 1080 × 130 (17mm)', l: 1140, w: 1080, h: 130, unit: 'mm', th: 17 },
+  // Sheet2: thickness=22mm, plank width=100mm (height 150)
+  { id: 'pwp_s2_1',  label: '1150 × 1150 × 150 (22mm)', l: 1150, w: 1150, h: 150, unit: 'mm', th: 22 },
+  { id: 'pwp_s2_2',  label: '1000 × 1000 × 150 (22mm)', l: 1000, w: 1000, h: 150, unit: 'mm', th: 22 },
+  { id: 'pwp_s2_3',  label: '950 × 1150 × 150 (22mm)',  l: 950,  w: 1150, h: 150, unit: 'mm', th: 22 },
+  { id: 'pwp_s2_4',  label: '1000 × 1050 × 150 (22mm)', l: 1000, w: 1050, h: 150, unit: 'mm', th: 22 },
+  { id: 'pwp_s2_5',  label: '1150 × 950 × 150 (22mm)',  l: 1150, w: 950,  h: 150, unit: 'mm', th: 22 },
+  // Sheet3: thickness=16mm, plank width=75mm (height 130)
+  { id: 'pwp_s3_1',  label: '900 × 1050 × 130 (16mm)',  l: 900,  w: 1050, h: 130, unit: 'mm', th: 16 },
+  { id: 'pwp_s3_2',  label: '900 × 1100 × 130 (16mm)',  l: 900,  w: 1100, h: 130, unit: 'mm', th: 16 },
+  { id: 'pwp_s3_3',  label: '1000 × 1100 × 130 (16mm)', l: 1000, w: 1100, h: 130, unit: 'mm', th: 16 },
+  { id: 'pwp_s3_4',  label: '1100 × 900 × 130 (16mm)',  l: 1100, w: 900,  h: 130, unit: 'mm', th: 16 },
+  { id: 'pwp_s3_5',  label: '1140 × 1080 × 130 (16mm)', l: 1140, w: 1080, h: 130, unit: 'mm', th: 16 },
+  // Sheet4: thickness=16mm, plank width=75mm (height 150)
+  { id: 'pwp_s4_1',  label: '1150 × 1150 × 150 (16mm)', l: 1150, w: 1150, h: 150, unit: 'mm', th: 16 },
+  { id: 'pwp_s4_2',  label: '1000 × 1000 × 150 (16mm)', l: 1000, w: 1000, h: 150, unit: 'mm', th: 16 },
+  { id: 'pwp_s4_3',  label: '950 × 1150 × 150 (16mm)',  l: 950,  w: 1150, h: 150, unit: 'mm', th: 16 },
+  { id: 'pwp_s4_4',  label: '1000 × 1050 × 150 (16mm)', l: 1000, w: 1050, h: 150, unit: 'mm', th: 16 },
+  { id: 'pwp_s4_5',  label: '1150 × 950 × 150 (16mm)',  l: 1150, w: 950,  h: 150, unit: 'mm', th: 16 },
 ];
 
 export const PINE_PLYWOOD_BOX_PRESETS = [
