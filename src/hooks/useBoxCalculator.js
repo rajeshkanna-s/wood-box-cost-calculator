@@ -156,16 +156,48 @@ export function useBoxCalculator() {
     }
   };
 
+  const mergeParts = (prevParts, nextParts) => {
+    if (!prevParts || prevParts.length === 0) return nextParts;
+    const prevMap = {};
+    prevParts.forEach(p => {
+      prevMap[p.id] = p;
+    });
+    const merged = nextParts.map(nextPart => {
+      const prevPart = prevMap[nextPart.id];
+      if (prevPart) {
+        if (nextPart.isPly) {
+          return {
+            ...nextPart,
+            qty: prevPart.qty !== undefined ? prevPart.qty : nextPart.qty,
+            h: prevPart.h !== undefined ? prevPart.h : nextPart.h,
+          };
+        } else {
+          return {
+            ...nextPart,
+            qty: prevPart.qty !== undefined ? prevPart.qty : nextPart.qty,
+            w: prevPart.w !== undefined ? prevPart.w : nextPart.w,
+            h: prevPart.h !== undefined ? prevPart.h : nextPart.h,
+          };
+        }
+      }
+      return nextPart;
+    });
+    const customParts = prevParts.filter(p => p.isCustom || p.id.includes('CUSTOM'));
+    const customPartsFiltered = customParts.filter(cp => !merged.some(mp => mp.id === cp.id));
+    return [...merged, ...customPartsFiltered];
+  };
+
   // Update dimensions and trigger auto-regeneration of parts
   const updateDim = (key, val) => {
     const numVal = Number(val) || 0;
     activeSetter(prev => {
       const nextDims = { ...prev.dims, [key]: numVal };
-      const nextParts = getGeneratedParts(activeTab, nextDims.l, nextDims.w, nextDims.h, nextDims.unit);
+      const nextParts = getGeneratedParts(activeTab, nextDims.l, nextDims.w, nextDims.h, nextDims.unit, nextDims.th);
+      const mergedParts = mergeParts(prev.parts, nextParts);
       return {
         ...prev,
         dims: nextDims,
-        parts: nextParts
+        parts: mergedParts
       };
     });
   };
@@ -215,15 +247,17 @@ export function useBoxCalculator() {
           l: Number(convertFromInches(lInches, newUnit).toFixed(2)),
           w: Number(convertFromInches(wInches, newUnit).toFixed(2)),
           h: Number(convertFromInches(hInches, newUnit).toFixed(2)),
+          th: prev.dims.th
         };
       }
 
-      const nextParts = getGeneratedParts(activeTab, nextDims.l, nextDims.w, nextDims.h, nextDims.unit);
+      const nextParts = getGeneratedParts(activeTab, nextDims.l, nextDims.w, nextDims.h, nextDims.unit, nextDims.th);
+      const mergedParts = mergeParts(prev.parts, nextParts);
 
       return {
         ...prev,
         dims: nextDims,
-        parts: nextParts
+        parts: mergedParts
       };
     });
   };
