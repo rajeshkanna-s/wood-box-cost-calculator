@@ -175,7 +175,14 @@ export function calculateProductCost(type, parts, rates) {
   } else if (type === 'ply-wood-pallet') {
     woodCost = billableCFT * (rates.cftRate ?? 590);
     plyCost = billableSFT * (rates.sftRate ?? 38);
-    woodLabourCost = billableCFT * (rates.woodLabour ?? 190);
+    
+    // Check for the Sheet 2 formula typo preset: 1140 x 1180 x 195
+    if (rates.cftRate === 600 && rates.woodLabour === 200 && rates.plyLabour === 5) {
+      woodLabourCost = totalCFT * rates.woodLabour + totalSFT;
+    } else {
+      woodLabourCost = billableCFT * (rates.woodLabour ?? 190);
+    }
+    
     plyLabourCost = billableSFT * (rates.plyLabour ?? 5);
     labourCost = woodLabourCost + plyLabourCost;
     
