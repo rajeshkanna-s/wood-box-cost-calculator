@@ -321,6 +321,22 @@ export function useBoxCalculator() {
             profitPct: 20
           };
         }
+      } else if (activeTab === 'pine-wood-pallet') {
+        const key = `${preset.l}x${preset.w}x${preset.h}`;
+        const pineWoodPalletRateOverrides = {
+          '1140x1080x130': { transport: 30 },
+          '1150x1150x150': { transport: 60 },
+          '950x1150x150':  { transport: 60 },
+          '1000x1050x150': { transport: 60 },
+          '1150x950x150':  { transport: 55, profitPct: 15 },
+        };
+        const overrides = pineWoodPalletRateOverrides[key];
+        if (overrides) {
+          nextRates = { ...prev.rates, ...overrides };
+        } else {
+          // Reset to defaults for presets without overrides
+          nextRates = { ...DEFAULT_PINE_WOOD_PALLET_RATES };
+        }
       }
 
       return {

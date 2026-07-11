@@ -50,7 +50,7 @@ export function buildPineWoodPalletParts(lengthInch, widthInch, heightInch) {
   const Hmm = Math.round(inchToMm(heightInch));
   
   const thickness = Hmm <= 135 ? 17 : 22;
-  const blockHeight = Hmm > 100 ? Hmm - (3 * thickness) : (Hmm <= 135 ? 78 : 85);
+  const blockHeight = Hmm <= 135 ? 78 : 85;
   
   // Custom configurations for specific sizes in excel
   if (Lmm === 1140 && Wmm === 1080 && Hmm === 130) {
@@ -64,11 +64,12 @@ export function buildPineWoodPalletParts(lengthInch, widthInch, heightInch) {
   
   if (Lmm === 1150 && Wmm === 950 && Hmm === 150) {
     return [
-      { id: 'TOP-1', label: 'Top Planks 1 (TOP)',       l: 1200, w: 100, h: 22, qty: 3, isPly: false },
-      { id: 'TOP-2', label: 'Top Planks 2 (TOP)',       l: 1200, w: 75,  h: 22, qty: 4, isPly: false },
-      { id: 'LEG',   label: 'Leg Planks (LEG)',         l: 1000, w: 100, h: 22, qty: 3, isPly: false },
-      { id: 'BACK',  label: 'Back Planks (BACK)',       l: 1200, w: 75,  h: 22, qty: 6, isPly: false },
-      { id: 'BLOOK', label: 'Leg Blocks (BLOOK)',       l: 150,  w: 100, h: 90, qty: 9, isPly: false }
+      { id: 'TOP-1', label: 'Top Planks 1 (TOP)',       l: 1200, w: 100, h: 22, qty: 7, isPly: false },
+      { id: 'TOP-2', label: 'Top Planks 2 (TOP)',       l: 1000, w: 100, h: 22, qty: 3, isPly: false },
+      { id: 'LEG',   label: 'Leg Planks (LEG)',         l: 1000, w: 100, h: 22, qty: 2, isPly: false },
+      { id: 'BACK',  label: 'Back Planks (BACK)',       l: 1200, w: 100, h: 22, qty: 3, isPly: false },
+      { id: 'BLOOK-1', label: 'Leg Blocks 1 (BLOOK)',   l: 150,  w: 100, h: 90, qty: 6, isPly: false },
+      { id: 'BLOOK-2', label: 'Leg Blocks 2 (BLOOK)',   l: 100,  w: 100, h: 90, qty: 3, isPly: false }
     ];
   }
 

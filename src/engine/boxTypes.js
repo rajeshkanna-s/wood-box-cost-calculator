@@ -38,7 +38,7 @@ export const PINE_WOOD_PALLET_PRESETS = [
   { id: 'pwp_wood1',  label: '900 × 1050 × 130', l: 900,  w: 1050, h: 130, unit: 'mm' },
   { id: 'pwp_wood2',  label: '900 × 1100 × 130', l: 900,  w: 1100, h: 130, unit: 'mm' },
   { id: 'pwp_wood3',  label: '1000 × 1100 × 130', l: 1000, w: 1100, h: 130, unit: 'mm' },
-  { id: 'pwp_wood4',  label: '1100 × 900 × 130', l: 1100, w: 90,   h: 130, unit: 'mm' },
+  { id: 'pwp_wood4',  label: '1100 × 900 × 130', l: 1100, w: 900,  h: 130, unit: 'mm' },
   { id: 'pwp_wood5',  label: '1140 × 1080 × 130', l: 1140, w: 1080, h: 130, unit: 'mm' },
   { id: 'pwp_wood6',  label: '1150 × 1150 × 150', l: 1150, w: 1150, h: 150, unit: 'mm' },
   { id: 'pwp_wood7',  label: '1000 × 1000 × 150', l: 1000, w: 1000, h: 150, unit: 'mm' },
