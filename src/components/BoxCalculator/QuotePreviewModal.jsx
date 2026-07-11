@@ -13,14 +13,7 @@ export default function QuotePreviewModal({
   onClose,
   onPrint,
   onDownload,
-  useWood = true,
-  usePly = false,
-  woodDims,
-  woodRates,
-  woodResult,
-  plyDims,
-  plyRates,
-  plyResult,
+  type = 'pine-wood-box'
 }) {
   if (!isOpen) return null;
 
@@ -87,14 +80,7 @@ export default function QuotePreviewModal({
                 result={result}
                 clientName={clientName}
                 active={true}
-                useWood={useWood}
-                usePly={usePly}
-                woodDims={woodDims}
-                woodRates={woodRates}
-                woodResult={woodResult}
-                plyDims={plyDims}
-                plyRates={plyRates}
-                plyResult={plyResult}
+                type={type}
               />
             ) : (
               <ClientQuoteSheet
@@ -104,14 +90,7 @@ export default function QuotePreviewModal({
                 clientName={clientName}
                 options={options}
                 active={true}
-                useWood={useWood}
-                usePly={usePly}
-                woodDims={woodDims}
-                woodRates={woodRates}
-                woodResult={woodResult}
-                plyDims={plyDims}
-                plyRates={plyRates}
-                plyResult={plyResult}
+                type={type}
               />
             )}
           </div>

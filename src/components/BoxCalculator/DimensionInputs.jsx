@@ -11,7 +11,8 @@ export default function DimensionInputs({
   showPresetSelector = false,
   onSelectPreset,
   isPlywood = false,
-  customPresetSelector = null
+  customPresetSelector = null,
+  type = 'pine-wood-box'
 }) {
   const currentUnit = dims.unit || 'in';
   
@@ -31,11 +32,12 @@ export default function DimensionInputs({
   const boxSurfaceAreaSqFt = currentUnit === 'sft' ? dims.l : ((2 * (lInches * wInches + wInches * hInches + lInches * hInches)) / 144);
 
   // Convert for conversion panel display
-  // If current unit is not 'mm', convert to 'mm'. If it is 'mm', convert to 'in'.
   const showUnit = currentUnit === 'mm' ? 'in' : 'mm';
   const l_converted = currentUnit === 'sft' ? 0 : (currentUnit === 'mm' ? convertFromInches(lInches, 'in') : convertFromInches(lInches, 'mm'));
   const w_converted = currentUnit === 'sft' ? 0 : (currentUnit === 'mm' ? convertFromInches(wInches, 'in') : convertFromInches(wInches, 'mm'));
   const h_converted = currentUnit === 'sft' ? 0 : (currentUnit === 'mm' ? convertFromInches(hInches, 'in') : convertFromInches(hInches, 'mm'));
+
+  const isReperType = type === 'pine-wood-box';
 
   return (
     <div className="glass-card flex flex-col">
@@ -47,7 +49,7 @@ export default function DimensionInputs({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
               </svg>
             </div>
-            <h2 className="section-title mr-2">Box Dimensions</h2>
+            <h2 className="section-title mr-2">Dimensions</h2>
           </div>
           <select
             value={currentUnit}
@@ -62,7 +64,7 @@ export default function DimensionInputs({
             {isPlywood && <option value="sft">Square Feet (sft)</option>}
           </select>
         </div>
-        {!isPlywood && (
+        {isReperType && (
           <span className="badge badge-wood">
             {reper.label}
           </span>
@@ -76,13 +78,13 @@ export default function DimensionInputs({
             <>
               <div className="flex items-center justify-between py-2 px-1 gap-4">
                 <span className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>
-                  Select Box Size:
+                  Select Preset Size:
                 </span>
                 <div className="flex-1 max-w-[60%]">
                   {customPresetSelector ? (
                     customPresetSelector
                   ) : (
-                    <PresetSelector compact={true} onSelect={onSelectPreset} isPlywood={isPlywood} />
+                    <PresetSelector compact={true} onSelect={onSelectPreset} type={type} />
                   )}
                 </div>
               </div>
@@ -107,7 +109,7 @@ export default function DimensionInputs({
                   <div style={{ borderTop: '1px solid var(--table-border)' }} />
                   <div className="flex items-center justify-between py-2.5 group">
                     <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
-                      Total Plywood Area
+                      Total Surface Area (Top/Side/Ends)
                     </span>
                     <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2.5 py-1 rounded">
                       {boxSurfaceAreaSqFt.toFixed(2)} SFT

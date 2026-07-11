@@ -7,127 +7,213 @@ export const inchToMm = (inch) => inch * MM_PER_INCH;
 export const calcCFT = (l, w, h, qty) =>
   (l * w * h * qty) / (FOOT_MM ** 3);
 
-export const DEFAULT_RATES = {
-  cftRate:   925,
-  labour:    200,
-  nail:      20,
+export const DEFAULT_PINE_WOOD_BOX_RATES = {
+  cftRate: 925,
+  labour: 190,
+  nail: 20,
   transport: 50,
-  packing:   50,
-  clamp:     30,
+  packing: 50,
+  clamp: 30,
+  plaining: 0,
+  eb: 0,
+  ht: 0,
+  loading: 0,
+  wastePct: 10,
   profitPct: 20,
-  wastePct:  10,
-  rateUnit:  'CFT',
+  rateUnit: 'CFT',
 };
 
-export const DEFAULT_PLY_RATES = {
-  cftRate:   33,
-  labour:    7,
-  nail:      2,
-  transport: 3,
-  packing:   2,
-  clamp:     0,
-  profitPct: 15,
-  wastePct:  10,
-  rateUnit:  'SFT',
+export const DEFAULT_PLY_WOOD_PALLET_RATES = {
+  cftRate: 590,          // Wood (Chip Blocks) CFT Rate
+  sftRate: 38,           // Ply SFT Rate
+  woodLabour: 190,       // Wood labour rate
+  plyLabour: 5,          // Ply labour rate
+  woodNail: 50,          // Wood nail rate
+  plyNail: 1,            // Ply nail rate
+  woodPlaining: 5,       // Wood plaining rate
+  plyPlaining: 1,        // Ply plaining rate
+  woodEB: 3,             // Wood EB rate
+  plyEB: 1,              // Ply EB rate
+  woodLoading: 3,        // Wood loading rate
+  plyLoading: 1,         // Ply loading rate
+  wastePctWood: 5,
+  wastePctPly: 7,
+  profitPct: 20,
+  rateUnit: 'COMBINED',
 };
 
+export const DEFAULT_PINE_WOOD_PALLET_RATES = {
+  cftRate: 925,
+  labour: 150,
+  nail: 30,
+  transport: 65,
+  plaining: 10,
+  eb: 5,
+  ht: 20,
+  packing: 0,
+  clamp: 0,
+  loading: 0,
+  wastePct: 10,
+  profitPct: 20,
+  rateUnit: 'CFT',
+};
 
-export function calcBoxCost(parts, rates = DEFAULT_RATES) {
-  const isPly = rates?.cftRate === 33 || rates?.rateUnit === 'SFT';
-  const defaults = isPly ? DEFAULT_PLY_RATES : DEFAULT_RATES;
+export const DEFAULT_PINE_PLYWOOD_BOX_RATES = {
+  cftRate: 925,          // Wood CFT Rate
+  sftRate: 35,           // Ply SFT Rate
+  woodLabour: 190,       // Wood labour rate
+  plyLabour: 7,          // Ply labour rate
+  woodNail: 30,          // Wood nail rate
+  plyNail: 0,            // Ply nail rate
+  woodPlaining: 20,      // Wood plaining rate
+  plyPlaining: 0,        // Ply plaining rate
+  woodHT: 15,            // Wood HT rate
+  plyHT: 0,              // Ply HT rate
+  woodLoading: 5,        // Wood loading rate
+  plyLoading: 0,         // Ply loading rate
+  wastePctWood: 10,
+  wastePctPly: 10,
+  profitPct: 20,
+  rateUnit: 'COMBINED',
+};
 
-  const getRateValue = (key, defaultVal) => {
-    if (rates && key in rates) {
-      const val = rates[key];
-      return (val === null || val === undefined) ? 0 : val;
-    }
-    return defaultVal;
-  };
+// Deprecated default rates for backward compatibility
+export const DEFAULT_RATES = DEFAULT_PINE_WOOD_BOX_RATES;
+export const DEFAULT_PLY_RATES = DEFAULT_PLY_WOOD_PALLET_RATES;
 
-  const cftRate = getRateValue('cftRate', defaults.cftRate);
-  const labour = getRateValue('labour', defaults.labour);
-  const nail = getRateValue('nail', defaults.nail);
-  const transport = getRateValue('transport', defaults.transport);
-  const packing = getRateValue('packing', defaults.packing);
-  const clamp = getRateValue('clamp', defaults.clamp);
-  const profitPct = getRateValue('profitPct', defaults.profitPct);
-  const wastePct = getRateValue('wastePct', defaults.wastePct);
-  const rateUnit = rates?.rateUnit || defaults.rateUnit;
+export function calculateProductCost(type, parts, rates) {
+  // Filter parts
+  const woodParts = parts.filter(p => !p.isPly && !p.isExcluded);
+  const plyParts = parts.filter(p => p.isPly && !p.isExcluded);
 
-  const partsWithCFT = parts.map(p => {
+  // Helper to calculate CFT of a wood part
+  const getPartCFT = (p) => {
+    if (p.cft !== undefined) return p.cft;
     const lMm = p.useInchLength ? p.l * 25.4 : p.l;
     const wMm = p.useInchWidth ? p.w * 25.4 : p.w;
-    const calcArea = (lMm * wMm * p.qty) / (304.8 ** 2);
-    
-    return {
-      ...p,
-      cft: p.isExcluded ? 0 : (p.cft !== undefined ? p.cft : calcCFT(p.l, p.w, p.h, p.qty)),
-      sft: p.isExcluded ? 0 : (p.sft !== undefined ? p.sft : calcArea)
-    };
-  });
+    const hMm = p.useInchHeight ? p.h * 25.4 : p.h;
+    return (lMm * wMm * hMm * p.qty) / (FOOT_MM ** 3);
+  };
 
-  const totalCFT  = partsWithCFT.reduce((s, p) => s + p.cft, 0);
-  const vestCFT   = totalCFT * (wastePct / 100);
-  const billable  = totalCFT + vestCFT;
+  // Helper to calculate SFT of a ply part
+  const getPartSFT = (p) => {
+    if (p.sft !== undefined) return p.sft;
+    const lMm = p.useInchLength ? p.l * 25.4 : p.l;
+    const wMm = p.useInchWidth ? p.w * 25.4 : p.w;
+    return (lMm * wMm * p.qty) / (304.8 ** 2);
+  };
 
-  const totalSFT  = partsWithCFT.reduce((s, p) => s + p.sft, 0);
-  const vestSFT   = totalSFT * (wastePct / 100);
+  const totalCFT = woodParts.reduce((sum, p) => sum + getPartCFT(p), 0);
+  const totalSFT = plyParts.reduce((sum, p) => sum + getPartSFT(p), 0);
+
+  // Set waste percentage factors
+  let wastePctWood = 10;
+  let wastePctPly = 10;
+
+  if (type === 'ply-wood-pallet') {
+    wastePctWood = rates.wastePctWood !== undefined ? rates.wastePctWood : 5;
+    wastePctPly = rates.wastePctPly !== undefined ? rates.wastePctPly : 7;
+  } else if (type === 'pine-plywood-box') {
+    wastePctWood = rates.wastePctWood !== undefined ? rates.wastePctWood : 10;
+    wastePctPly = rates.wastePctPly !== undefined ? rates.wastePctPly : 10;
+  } else {
+    // Single-material calculators
+    wastePctWood = rates.wastePct !== undefined ? rates.wastePct : 10;
+    wastePctPly = rates.wastePct !== undefined ? rates.wastePct : 10;
+  }
+
+  const vestCFT = totalCFT * (wastePctWood / 100);
+  const billableCFT = totalCFT + vestCFT;
+
+  const vestSFT = totalSFT * (wastePctPly / 100);
   const billableSFT = totalSFT + vestSFT;
 
-  const isAreaRate = rateUnit === 'SFT' || rateUnit === 'SFT of 4 NOS';
-  const woodCost      = isAreaRate ? (billableSFT * cftRate) : (billable * cftRate);
+  const profitPct = rates.profitPct !== undefined ? rates.profitPct : 20;
 
-  const hasKey = (key) => rates === null || rates === undefined || (key in rates && rates[key] !== null && rates[key] !== undefined);
+  // Initialize all cost breakdown fields
+  let woodCost = 0;
+  let plyCost = 0;
+  let labourCost = 0;
+  let woodLabourCost = 0;
+  let plyLabourCost = 0;
+  let nailCost = 0;
+  let transportCost = 0;
+  let plainingCost = 0;
+  let ebCost = 0;
+  let htCost = 0;
+  let packingCost = 0;
+  let clampCost = 0;
+  let loadingCost = 0;
 
-  const labourCost    = hasKey('labour') ? (isAreaRate ? (billableSFT * labour) : (billable * labour)) : 0;
-  const nailCost      = hasKey('nail') ? (isAreaRate ? (billableSFT * nail) : (billable * nail)) : 0;
-  const transportCost = hasKey('transport') ? (isAreaRate ? (billableSFT * transport) : (billable * transport)) : 0;
-  const packingCost   = hasKey('packing') ? (isAreaRate ? (billableSFT * packing) : (billable * packing)) : 0;
-  const clampCost     = hasKey('clamp') ? (isAreaRate ? (billableSFT * clamp) : (billable * clamp)) : 0;
+  if (type === 'pine-wood-box') {
+    const cftRate = rates.cftRate ?? 925;
+    woodCost = billableCFT * cftRate;
+    labourCost = billableCFT * (rates.labour ?? 190);
+    nailCost = billableCFT * (rates.nail ?? 20);
+    transportCost = billableCFT * (rates.transport ?? 50);
+    packingCost = billableCFT * (rates.packing ?? 50);
+    clampCost = billableCFT * (rates.clamp ?? 30);
+  } else if (type === 'pine-wood-pallet') {
+    const cftRate = rates.cftRate ?? 925;
+    woodCost = billableCFT * cftRate;
+    labourCost = billableCFT * (rates.labour ?? 150);
+    nailCost = billableCFT * (rates.nail ?? 30);
+    transportCost = billableCFT * (rates.transport ?? 65);
+    plainingCost = billableCFT * (rates.plaining ?? 10);
+    ebCost = billableCFT * (rates.eb ?? 5);
+    htCost = billableCFT * (rates.ht ?? 20);
+  } else if (type === 'pine-plywood-box') {
+    woodCost = billableCFT * (rates.cftRate ?? 925);
+    plyCost = billableSFT * (rates.sftRate ?? 35);
+    woodLabourCost = billableCFT * (rates.woodLabour ?? 190);
+    plyLabourCost = billableSFT * (rates.plyLabour ?? 7);
+    labourCost = woodLabourCost + plyLabourCost;
+    nailCost = billableCFT * (rates.woodNail ?? 30);
+    plainingCost = billableCFT * (rates.woodPlaining ?? 20);
+    htCost = billableCFT * (rates.woodHT ?? 15);
+    loadingCost = billableCFT * (rates.woodLoading ?? 5);
+  } else if (type === 'ply-wood-pallet') {
+    woodCost = billableCFT * (rates.cftRate ?? 590);
+    plyCost = billableSFT * (rates.sftRate ?? 38);
+    woodLabourCost = billableCFT * (rates.woodLabour ?? 190);
+    plyLabourCost = billableSFT * (rates.plyLabour ?? 5);
+    labourCost = woodLabourCost + plyLabourCost;
+    
+    // Formula: Wood CFT * rate + Ply SFT * rate
+    nailCost = billableCFT * (rates.woodNail ?? 50) + billableSFT * (rates.plyNail ?? 1);
+    plainingCost = billableCFT * (rates.woodPlaining ?? 5) + billableSFT * (rates.plyPlaining ?? 1);
+    ebCost = billableCFT * (rates.woodEB ?? 3) + billableSFT * (rates.plyEB ?? 1);
+    loadingCost = billableCFT * (rates.woodLoading ?? 3) + billableSFT * (rates.plyLoading ?? 1);
+  }
 
-  // Calculate custom rates
-  const customRates = rates?.customRates || [];
-  let customSubtotal = 0;
-  let customProfitTotal = 0;
-  const customCosts = {};
-
-  customRates.forEach(cr => {
-    if (!cr.label || !cr.value) return;
-    if (cr.type === 'currency' || !cr.type) {
-      const cost = isAreaRate ? (billableSFT * cr.value) : (billable * cr.value);
-      customSubtotal += cost;
-      customCosts[cr.label] = cost;
-    }
-  });
-
-  const subtotal   = woodCost + labourCost + nailCost
-                   + transportCost + packingCost + clampCost
-                   + customSubtotal;
-
-  const standardProfit = hasKey('profitPct') ? (subtotal * (profitPct / 100)) : 0;
-
-  customRates.forEach(cr => {
-    if (!cr.label || !cr.value) return;
-    if (cr.type === 'percent') {
-      const cost = subtotal * (cr.value / 100);
-      customProfitTotal += cost;
-      customCosts[cr.label] = cost;
-    }
-  });
-
-  const profit = standardProfit + customProfitTotal;
+  const subtotal = woodCost + plyCost + labourCost + nailCost + transportCost + plainingCost + ebCost + htCost + packingCost + clampCost + loadingCost;
+  const profit = subtotal * (profitPct / 100);
   const finalTotal = subtotal + profit;
+
+  // Enrich parts array with individual CFT/SFT calculations for rendering
+  const partsWithCFT = parts.map(p => ({
+    ...p,
+    cft: p.isPly ? 0 : getPartCFT(p),
+    sft: p.isPly ? getPartSFT(p) : 0,
+  }));
 
   return {
     partsWithCFT,
-    totalCFT, vestCFT, billable,
+    totalCFT, vestCFT, billable: billableCFT,
     totalSFT, vestSFT, billableSFT,
-    woodCost, labourCost, nailCost,
-    transportCost, packingCost, clampCost,
-    customCosts,
+    woodCost, plyCost, labourCost, woodLabourCost, plyLabourCost, nailCost,
+    transportCost, plainingCost, ebCost, htCost, packingCost, clampCost, loadingCost,
+    subtotal, profitPct, profit, finalTotal,
     rates,
-    subtotal, profitPct, profit, finalTotal
+    type
   };
+}
+
+export function calcBoxCost(parts, rates = DEFAULT_RATES) {
+  // Legacy function mapping for backward compatibility
+  const isPly = rates?.sftRate !== undefined || rates?.cftRate === 33 || rates?.rateUnit === 'SFT';
+  const type = isPly ? 'pine-plywood-box' : 'pine-wood-box';
+  return calculateProductCost(type, parts, rates);
 }
 
 export function convertToInches(val, unit) {
@@ -155,3 +241,4 @@ export function convertFromInches(valInInches, targetUnit) {
       return value;
   }
 }
+

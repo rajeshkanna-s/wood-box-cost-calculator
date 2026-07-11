@@ -12,7 +12,12 @@ const formatQty = (n) =>
 
 const formatDimension = (n) => {
   const value = Number(n || 0);
-  return Number.isInteger(value) ? value.toString() : value.toFixed(1);
+  return Number(value.toFixed(2)).toString();
+};
+
+const formatPartDim = (n) => {
+  const value = Number(n || 0);
+  return Number(value.toFixed(2)).toString();
 };
 
 const formatMm = (n) => Math.round(Number(n || 0)).toString();
@@ -44,151 +49,87 @@ export default function QuoteSheet({
   result,
   clientName,
   active = false,
-  useWood = true,
-  usePly = false,
-  woodDims,
-  woodRates,
-  woodResult,
-  plyDims,
-  plyRates,
-  plyResult
+  type = 'pine-wood-box'
 }) {
   const { quoteDateLabel, quoteNo } = getQuoteMeta(result);
+  const isCombined = type === 'ply-wood-pallet' || type === 'pine-plywood-box';
 
-  // Normalize structure for presets (flat) vs custom calculator (combined / dual)
-  const isCombined = result && result.wood !== undefined;
-  
-  const activeUseWood = isCombined ? useWood : (useWood !== undefined ? useWood : true);
-  const activeUsePly = isCombined ? usePly : (usePly !== undefined ? usePly : false);
+  const wIsMm = dims?.unit === 'mm';
+  const isSft = dims?.unit === 'sft';
 
-  const wDims = isCombined ? woodDims : dims;
-  const wRates = isCombined ? woodRates : rates;
-  const wResult = isCombined ? result.wood : result;
+  // Format dimensions string
+  const getDimsString = (d) => {
+    if (isSft) return `${formatDimension(d.l)} Sq.Ft (SFT) × ${formatDimension(d.h)} mm`;
+    const u = d.unit || 'in';
+    return `${formatDimension(d.l)} × ${formatDimension(d.w)} × ${formatDimension(d.h)} ${u}`;
+  };
 
-  const pDims = isCombined ? plyDims : dims;
-  const pRates = isCombined ? plyRates : rates;
-  const pResult = isCombined ? result.ply : null;
+  const getDimsConvertedString = (d) => {
+    if (isSft) return '';
+    const u = d.unit || 'in';
+    if (u === 'mm') {
+      return `${formatDimension(d.l / 25.4)} × ${formatDimension(d.w / 25.4)} × ${formatDimension(d.h / 25.4)} in`;
+    } else {
+      return `${Math.round(d.l * 25.4)} × ${Math.round(d.w * 25.4)} × ${Math.round(d.h * 25.4)} mm`;
+    }
+  };
 
-  const finalTotalVal = isCombined ? result.finalTotal : result?.finalTotal;
+  const includedParts = result?.partsWithCFT?.filter(p => !p.isExcluded) || [];
+  const woodParts = includedParts.filter(p => !p.isPly);
+  const plyParts = includedParts.filter(p => p.isPly);
 
-  // Wood calculations
-  const wIsMm = wDims?.unit === 'mm';
-  const wLengthInInches = wIsMm ? wDims.l / 25.4 : wDims.l;
-  const wReperType = getReperType(wLengthInInches);
-  const wIncludedParts = wResult?.partsWithCFT?.filter((part) => !part.isExcluded) || [];
-  const wTotalQty = wIncludedParts.reduce((sum, part) => sum + Number(part.qty || 0), 0);
+  const getProductTitle = () => {
+    switch (type) {
+      case 'pine-wood-box': return 'Pine Wood Box';
+      case 'ply-wood-pallet': return 'Plywood Pallet';
+      case 'pine-wood-pallet': return 'Pine Wood Pallet';
+      case 'pine-plywood-box': return 'Pine Plywood Box';
+      default: return 'Wood Box';
+    }
+  };
 
-  const wSpecs = [
-    {
-      label: wIsMm ? 'Metric Size' : 'Box Size',
-      value: wIsMm
-        ? `${formatDimension(wDims.l)} × ${formatDimension(wDims.w)} × ${formatDimension(wDims.h)} mm`
-        : `${formatDimension(wDims.l)} × ${formatDimension(wDims.w)} × ${formatDimension(wDims.h)} in`
-    },
-    {
-      label: wIsMm ? 'Box Size' : 'Metric Size',
-      value: wIsMm
-        ? `${formatDimension(wDims.l / 25.4)} × ${formatDimension(wDims.w / 25.4)} × ${formatDimension(wDims.h / 25.4)} in`
-        : `${formatMm(inchToMm(wDims.l))} × ${formatMm(inchToMm(wDims.w))} × ${formatMm(inchToMm(wDims.h))} mm`
-    },
-    { label: 'Frame Type', value: `${wReperType}-Reper pine wood packing box` },
-    { label: 'Components', value: `${wIncludedParts.length} part types • ${formatQty(wTotalQty)} total pieces` },
+  const specs = [
+    { label: 'Product Type', value: getProductTitle() },
+    { label: 'Size', value: getDimsString(dims) },
+    ...(isSft ? [] : [{ label: 'Alternate Size', value: getDimsConvertedString(dims) }]),
+    { label: 'Components', value: `${includedParts.length} parts • ${formatQty(includedParts.reduce((sum, p) => sum + p.qty, 0))} total pieces` }
   ];
 
-  // Plywood calculations
-  const pIsMm = pDims?.unit === 'mm';
-  const pIsSft = pDims?.unit === 'sft';
-  const pIncludedParts = pResult?.partsWithCFT?.filter((part) => !part.isExcluded) || [];
-  const pTotalQty = pIncludedParts.reduce((sum, part) => sum + Number(part.qty || 0), 0);
+  const costLines = !isCombined
+    ? [
+        { label: 'Wood Cost', value: result.woodCost },
+        ...(result.labourCost > 0 ? [{ label: 'Labour', value: result.labourCost }] : []),
+        ...(result.nailCost > 0 ? [{ label: 'Nails', value: result.nailCost }] : []),
+        ...(result.transportCost > 0 ? [{ label: 'Transport', value: result.transportCost }] : []),
+        ...(result.packingCost > 0 ? [{ label: 'Packing Cover', value: result.packingCost }] : []),
+        ...(result.clampCost > 0 ? [{ label: 'Clamp', value: result.clampCost }] : []),
+        ...(result.plainingCost > 0 ? [{ label: 'Plaining', value: result.plainingCost }] : []),
+        ...(result.ebCost > 0 ? [{ label: 'EB', value: result.ebCost }] : []),
+        ...(result.htCost > 0 ? [{ label: 'HT', value: result.htCost }] : []),
+      ]
+    : [];
 
-  const pSpecs = activeUsePly ? (
-    pIsSft ? [
-      { label: 'Plywood Area', value: `${formatDimension(pDims.l)} Sq.Ft (SFT)` },
-      { label: 'Thickness', value: `${formatDimension(pDims.h)} mm` },
-      { label: 'Components', value: `${pIncludedParts.length} component types` },
-    ] : [
-      {
-        label: pIsMm ? 'Metric Size' : 'Box Size',
-        value: pIsMm
-          ? `${formatDimension(pDims.l)} × ${formatDimension(pDims.w)} × ${formatDimension(pDims.h)} mm`
-          : `${formatDimension(pDims.l)} × ${formatDimension(pDims.w)} × ${formatDimension(pDims.h)} in`
-      },
-      {
-        label: pIsMm ? 'Box Size' : 'Metric Size',
-        value: pIsMm
-          ? `${formatDimension(pDims.l / 25.4)} × ${formatDimension(pDims.w / 25.4)} × ${formatDimension(pDims.h / 25.4)} in`
-          : `${formatMm(inchToMm(pDims.l))} × ${formatMm(inchToMm(pDims.w))} × ${formatMm(inchToMm(pDims.h))} mm`
-      },
-      { label: 'Components', value: `${pIncludedParts.length} part types • ${formatQty(pTotalQty)} total pieces` },
-    ]
-  ) : [];
-
-  // Combined Cost items mapping
   const combinedCostItems = isCombined
     ? (() => {
-        const itemsMap = {};
-        const addVal = (label, side, val) => {
-          if (!itemsMap[label]) {
-            itemsMap[label] = { label, wVal: 0, pVal: 0 };
-          }
-          itemsMap[label][side] = val;
-        };
+        const items = [];
+        items.push({ label: 'Material Cost', wVal: result.woodCost, pVal: result.plyCost });
+        items.push({ label: 'Labour Cost', wVal: result.woodLabourCost, pVal: result.plyLabourCost });
+        items.push({ label: 'Nails Cost', wVal: result.billable * (rates.woodNail || 0), pVal: result.billableSFT * (rates.plyNail || 0) });
+        items.push({ label: 'Plaining Cost', wVal: result.billable * (rates.woodPlaining || 0), pVal: result.billableSFT * (rates.plyPlaining || 0) });
         
-        addVal('Material Cost', 'wVal', wResult?.woodCost || 0);
-        addVal('Material Cost', 'pVal', pResult?.woodCost || 0);
-        
-        const wRatesObj = wResult?.rates || {};
-        const pRatesObj = pResult?.rates || {};
-        
-        if (wRatesObj.labour !== null && wRatesObj.labour !== undefined || pRatesObj.labour !== null && pRatesObj.labour !== undefined) {
-          addVal('Labour', 'wVal', wResult?.labourCost || 0);
-          addVal('Labour', 'pVal', pResult?.labourCost || 0);
+        if (type === 'ply-wood-pallet') {
+          items.push({ label: 'EB Cost', wVal: result.billable * (rates.woodEB || 0), pVal: result.billableSFT * (rates.plyEB || 0) });
+          items.push({ label: 'Loading Cost', wVal: result.billable * (rates.woodLoading || 0), pVal: result.billableSFT * (rates.plyLoading || 0) });
         }
-        if (wRatesObj.nail !== null && wRatesObj.nail !== undefined || pRatesObj.nail !== null && pRatesObj.nail !== undefined) {
-          addVal('Nails', 'wVal', wResult?.nailCost || 0);
-          addVal('Nails', 'pVal', pResult?.nailCost || 0);
+        if (type === 'pine-plywood-box') {
+          items.push({ label: 'HT Cost', wVal: result.billable * (rates.woodHT || 0), pVal: 0 });
+          items.push({ label: 'Loading Cost', wVal: result.billable * (rates.woodLoading || 0), pVal: 0 });
         }
-        if (wRatesObj.transport !== null && wRatesObj.transport !== undefined || pRatesObj.transport !== null && pRatesObj.transport !== undefined) {
-          addVal('Transport', 'wVal', wResult?.transportCost || 0);
-          addVal('Transport', 'pVal', pResult?.transportCost || 0);
-        }
-        if (wRatesObj.packing !== null && wRatesObj.packing !== undefined || pRatesObj.packing !== null && pRatesObj.packing !== undefined) {
-          addVal('Packing Cover', 'wVal', wResult?.packingCost || 0);
-          addVal('Packing Cover', 'pVal', pResult?.packingCost || 0);
-        }
-        if (wRatesObj.clamp !== null && wRatesObj.clamp !== undefined || pRatesObj.clamp !== null && pRatesObj.clamp !== undefined) {
-          addVal('Clamp', 'wVal', wResult?.clampCost || 0);
-          addVal('Clamp', 'pVal', pResult?.clampCost || 0);
-        }
-        
-        if (wResult?.customCosts) {
-          Object.entries(wResult.customCosts).forEach(([label, val]) => {
-            addVal(label, 'wVal', val);
-          });
-        }
-        if (pResult?.customCosts) {
-          Object.entries(pResult.customCosts).forEach(([label, val]) => {
-            addVal(label, 'pVal', val);
-          });
-        }
-        
-        return Object.values(itemsMap).map(item => ({
+        return items.filter(item => (item.wVal + item.pVal) > 0).map(item => ({
           ...item,
           combVal: item.wVal + item.pVal
         }));
       })()
-    : [];
-
-  const costLines = !isCombined
-    ? [
-        { label: activeUseWood ? 'Wood Cost' : 'Plywood Cost', value: wResult?.woodCost },
-        ...(wRates?.labour !== null && wRates?.labour !== undefined ? [{ label: 'Labour', value: wResult?.labourCost }] : []),
-        ...(wRates?.nail !== null && wRates?.nail !== undefined ? [{ label: 'Nails', value: wResult?.nailCost }] : []),
-        ...(wRates?.transport !== null && wRates?.transport !== undefined ? [{ label: 'Transport', value: wResult?.transportCost }] : []),
-        ...(wRates?.packing !== null && wRates?.packing !== undefined ? [{ label: 'Packing Cover', value: wResult?.packingCost }] : []),
-        ...(wRates?.clamp !== null && wRates?.clamp !== undefined ? [{ label: 'Clamp', value: wResult?.clampCost }] : []),
-        ...(wResult?.customCosts ? Object.entries(wResult.customCosts).map(([label, val]) => ({ label, value: val })) : [])
-      ]
     : [];
 
   return (
@@ -222,14 +163,14 @@ export default function QuoteSheet({
         </div>
       </div>
 
-      {activeUseWood && activeUsePly ? (
+      {isCombined ? (
         <div className="quote-summary-grid" style={{ display: 'grid', gridTemplateColumns: '1.55fr 1.55fr 0.9fr', gap: '12px' }}>
-          {/* Column 1: Pine Wood Specs + Wood Summary */}
+          {/* Column 1: Pine Wood Summary */}
           <div className="flex flex-col gap-2.5">
             <section className="quote-panel quote-spec-panel">
-              <h2>Pine Wood Specs</h2>
+              <h2>Wood Specifications</h2>
               <dl className="quote-spec-list">
-                {wSpecs.map((item) => (
+                {specs.map((item) => (
                   <div key={item.label}>
                     <dt>{item.label}</dt>
                     <dd style={{ whiteSpace: 'nowrap' }}>{item.value}</dd>
@@ -238,70 +179,49 @@ export default function QuoteSheet({
               </dl>
             </section>
             <section className="quote-panel">
-              <h2>Wood Summary</h2>
+              <h2>Wood Volume Summary</h2>
               <dl className="quote-kpi-list">
-                {wRates.wastePct !== null && wRates.wastePct !== undefined && wRates.wastePct > 0 ? (
-                  <>
-                    <div>
-                      <dt>Net {wRates.rateUnit || 'CFT'}</dt>
-                      <dd>{formatCFT(wResult.totalCFT)}</dd>
-                    </div>
-                    <div>
-                      <dt>Waste ({wRates.wastePct}%)</dt>
-                      <dd>{formatCFT(wResult.vestCFT)}</dd>
-                    </div>
-                    <div className="quote-emphasis-row">
-                      <dt>Billable {wRates.rateUnit || 'CFT'}</dt>
-                      <dd>{formatCFT(wResult.billable)}</dd>
-                    </div>
-                  </>
-                ) : (
-                  <div className="quote-emphasis-row">
-                    <dt>Total {wRates.rateUnit || 'CFT'}</dt>
-                    <dd>{formatCFT(wResult.totalCFT)}</dd>
-                  </div>
-                )}
+                <div>
+                  <dt>Net Wood CFT</dt>
+                  <dd>{formatCFT(result.totalCFT)}</dd>
+                </div>
+                <div>
+                  <dt>Waste ({type === 'ply-wood-pallet' ? 5 : 10}%)</dt>
+                  <dd>{formatCFT(result.vestCFT)}</dd>
+                </div>
+                <div className="quote-emphasis-row">
+                  <dt>Billable Wood CFT</dt>
+                  <dd>{formatCFT(result.billable)}</dd>
+                </div>
               </dl>
             </section>
           </div>
 
-          {/* Column 2: Plywood Specs + Plywood Summary */}
+          {/* Column 2: Plywood Summary */}
           <div className="flex flex-col gap-2.5">
             <section className="quote-panel quote-spec-panel">
-              <h2>Plywood Specs</h2>
-              <dl className="quote-spec-list">
-                {pSpecs.map((item) => (
-                  <div key={item.label}>
-                    <dt>{item.label}</dt>
-                    <dd style={{ whiteSpace: 'nowrap' }}>{item.value}</dd>
-                  </div>
-                ))}
-              </dl>
+              <h2>Plywood Specifications</h2>
+              <div className="p-3 text-xs text-slate-600 dark:text-slate-400">
+                <p className="font-semibold">{getProductTitle()} Structure</p>
+                <p className="mt-1">Plywood Area: {Number(result.totalSFT || 0).toFixed(2)} SFT</p>
+                <p>Plywood Panels: {plyParts.length} components</p>
+              </div>
             </section>
             <section className="quote-panel">
-              <h2>Plywood Summary</h2>
+              <h2>Plywood Area Summary</h2>
               <dl className="quote-kpi-list">
-                {pRates.wastePct !== null && pRates.wastePct !== undefined && pRates.wastePct > 0 ? (
-                  <>
-                    <div>
-                      <dt>Net {pRates.rateUnit || 'CFT'}</dt>
-                      <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.totalSFT || 0).toFixed(3) : formatCFT(pResult.totalCFT)}</dd>
-                    </div>
-                    <div>
-                      <dt>Waste ({pRates.wastePct}%)</dt>
-                      <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.vestSFT || 0).toFixed(3) : formatCFT(pResult.vestCFT)}</dd>
-                    </div>
-                    <div className="quote-emphasis-row">
-                      <dt>Billable {pRates.rateUnit || 'CFT'}</dt>
-                      <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.billableSFT || 0).toFixed(3) : formatCFT(pResult.billable)}</dd>
-                    </div>
-                  </>
-                ) : (
-                  <div className="quote-emphasis-row">
-                    <dt>Total {pRates.rateUnit || 'CFT'}</dt>
-                    <dd>{pRates.rateUnit === 'SFT' ? Number(pResult.totalSFT || 0).toFixed(3) : formatCFT(pResult.totalCFT)}</dd>
-                  </div>
-                )}
+                <div>
+                  <dt>Net Plywood SFT</dt>
+                  <dd>{Number(result.totalSFT || 0).toFixed(2)}</dd>
+                </div>
+                <div>
+                  <dt>Waste ({type === 'ply-wood-pallet' ? 7 : 10}%)</dt>
+                  <dd>{Number(result.vestSFT || 0).toFixed(2)}</dd>
+                </div>
+                <div className="quote-emphasis-row">
+                  <dt>Billable Plywood SFT</dt>
+                  <dd>{Number(result.billableSFT || 0).toFixed(2)}</dd>
+                </div>
               </dl>
             </section>
           </div>
@@ -311,13 +231,11 @@ export default function QuoteSheet({
             <span className="quote-total-label">Final Quote Price</span>
             <strong className="quote-total-amount">
               <span className="quote-currency">₹</span>
-              <span className="quote-total-value">{formatINR(finalTotalVal)}</span>
+              <span className="quote-total-value">{formatINR(result.finalTotal)}</span>
             </strong>
             <small>
-              {((wRates.profitPct ?? 0) > 0 || (pRates.profitPct ?? 0) > 0) ? (
-                <>
-                  Wood ({wRates.profitPct ?? 0}%) + Ply ({pRates.profitPct ?? 0}%) Profit
-                </>
+              {result.profitPct > 0 ? (
+                <>Includes {result.profitPct}% Profit margin</>
               ) : (
                 "Excluded Profit Margin"
               )}
@@ -327,9 +245,9 @@ export default function QuoteSheet({
       ) : (
         <div className="quote-summary-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr', gap: '12px' }}>
           <section className="quote-panel quote-spec-panel">
-            <h2>Box Specification</h2>
+            <h2>Specifications</h2>
             <dl className="quote-spec-list">
-              {(activeUseWood ? wSpecs : pSpecs).map((item) => (
+              {specs.map((item) => (
                 <div key={item.label}>
                   <dt>{item.label}</dt>
                   <dd style={{ whiteSpace: 'nowrap' }}>{item.value}</dd>
@@ -339,29 +257,20 @@ export default function QuoteSheet({
           </section>
 
           <section className="quote-panel">
-            <h2>{(activeUseWood ? wRates : pRates).rateUnit || 'CFT'} Summary</h2>
+            <h2>Volume Summary</h2>
             <dl className="quote-kpi-list">
-              {((activeUseWood ? wRates : pRates).wastePct !== null && (activeUseWood ? wRates : pRates).wastePct !== undefined && (activeUseWood ? wRates : pRates).wastePct > 0) ? (
-                <>
-                  <div>
-                    <dt>Net {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</dt>
-                    <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.totalSFT : pResult.totalSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.totalCFT : pResult.totalCFT)}</dd>
-                  </div>
-                  <div>
-                    <dt>Waste ({(activeUseWood ? wRates : pRates).wastePct}%)</dt>
-                    <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.vestSFT : pResult.vestSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.vestCFT : pResult.vestCFT)}</dd>
-                  </div>
-                  <div className="quote-emphasis-row">
-                    <dt>Billable {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</dt>
-                    <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.billableSFT : pResult.billableSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.billable : pResult.billable)}</dd>
-                  </div>
-                </>
-              ) : (
-                <div className="quote-emphasis-row">
-                  <dt>Total {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</dt>
-                  <dd>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.totalSFT : pResult.totalSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.totalCFT : pResult.totalCFT)}</dd>
-                </div>
-              )}
+              <div>
+                <dt>Net CFT</dt>
+                <dd>{formatCFT(result.totalCFT)}</dd>
+              </div>
+              <div>
+                <dt>Waste ({rates.wastePct ?? 10}%)</dt>
+                <dd>{formatCFT(result.vestCFT)}</dd>
+              </div>
+              <div className="quote-emphasis-row">
+                <dt>Billable CFT</dt>
+                <dd>{formatCFT(result.billable)}</dd>
+              </div>
             </dl>
           </section>
 
@@ -369,11 +278,11 @@ export default function QuoteSheet({
             <span className="quote-total-label">Final Quote Price</span>
             <strong className="quote-total-amount">
               <span className="quote-currency">₹</span>
-              <span className="quote-total-value">{formatINR(finalTotalVal)}</span>
+              <span className="quote-total-value">{formatINR(result.finalTotal)}</span>
             </strong>
             <small>
-              {(activeUseWood ? wRates : pRates).profitPct > 0 ? (
-                <>Includes {(activeUseWood ? wRates : pRates).profitPct}% profit margin</>
+              {rates.profitPct > 0 ? (
+                <>Includes {rates.profitPct}% profit margin</>
               ) : (
                 <>Excluded profit margin</>
               )}
@@ -391,21 +300,19 @@ export default function QuoteSheet({
                 <thead>
                   <tr>
                     <th style={{ width: '10%' }}>Part</th>
-                    <th style={{ width: '35%' }}>Description</th>
-                    <th style={{ width: '31%', whiteSpace: 'nowrap' }}>Size</th>
-                    <th style={{ width: '12%', textAlign: 'center' }}>Qty</th>
-                    <th style={{ width: '12%', textAlign: 'right' }}>{wRates.rateUnit || 'CFT'}</th>
+                    <th style={{ width: '40%' }}>Description</th>
+                    <th style={{ width: '30%', whiteSpace: 'nowrap' }}>Size</th>
+                    <th style={{ width: '10%', textAlign: 'center' }}>Qty</th>
+                    <th style={{ width: '10%', textAlign: 'right' }}>CFT</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {wIncludedParts.map((part, index) => (
+                  {woodParts.map((part, index) => (
                     <tr key={`${part.id}-${index}`}>
                       <td>{part.id}</td>
                       <td>{part.label}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        {`${part.useInchLength ? part.l + '"' : formatMm(part.l)} × ${part.useInchWidth ? part.w + '"' : formatMm(part.w)
-                          } × ${part.useInchHeight ? part.h + '"' : formatMm(part.h)
-                          }`}
+                        {`${formatPartDim(part.l)} × ${formatPartDim(part.w)} × ${formatPartDim(part.h)} mm`}
                       </td>
                       <td style={{ textAlign: 'center' }}>{formatQty(part.qty)}</td>
                       <td>{formatCFT(part.cft)}</td>
@@ -421,24 +328,22 @@ export default function QuoteSheet({
                 <thead>
                   <tr>
                     <th style={{ width: '10%' }}>Part</th>
-                    <th style={{ width: '35%' }}>Description</th>
-                    <th style={{ width: '31%', whiteSpace: 'nowrap' }}>Size</th>
-                    <th style={{ width: '12%', textAlign: 'center' }}>Qty</th>
-                    <th style={{ width: '12%', textAlign: 'right' }}>{pRates.rateUnit || 'CFT'}</th>
+                    <th style={{ width: '40%' }}>Description</th>
+                    <th style={{ width: '30%', whiteSpace: 'nowrap' }}>Size</th>
+                    <th style={{ width: '10%', textAlign: 'center' }}>Qty</th>
+                    <th style={{ width: '10%', textAlign: 'right' }}>SFT</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {pIncludedParts.map((part, index) => (
+                  {plyParts.map((part, index) => (
                     <tr key={`${part.id}-${index}`}>
                       <td>{part.id}</td>
                       <td>{part.label}</td>
                       <td style={{ whiteSpace: 'nowrap' }}>
-                        {`${part.useInchLength ? part.l + '"' : formatMm(part.l)} × ${part.useInchWidth ? part.w + '"' : formatMm(part.w)
-                          } × ${part.useInchHeight ? part.h + '"' : formatMm(part.h)
-                          }`}
+                        {`${formatPartDim(part.l)} × ${formatPartDim(part.w)} mm`}
                       </td>
                       <td style={{ textAlign: 'center' }}>{formatQty(part.qty)}</td>
-                      <td>{pRates.rateUnit === 'SFT' ? Number(part.sft || 0).toFixed(3) : formatCFT(part.cft)}</td>
+                      <td>{Number(part.sft || 0).toFixed(2)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -469,30 +374,28 @@ export default function QuoteSheet({
                   ))}
                   <tr className="quote-subtotal-row border-t" style={{ borderColor: '#cbd5e1' }}>
                     <td style={{ py: '6px', fontWeight: 'bold' }}>Subtotal</td>
-                    <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(wResult.subtotal)}</td>
-                    <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(pResult.subtotal)}</td>
-                    <td style={{ py: '6px', textAlign: 'right', fontWeight: 'bold', color: 'var(--accent-wood)' }}>₹ {formatINR(wResult.subtotal + pResult.subtotal)}</td>
+                    <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(result.woodCost + result.woodLabourCost + (result.billable * (rates.woodNail || 0)) + (result.billable * (rates.woodPlaining || 0)) + (type === 'ply-wood-pallet' ? (result.billable * (rates.woodEB || 0)) + (result.billable * (rates.woodLoading || 0)) : 0) + (type === 'pine-plywood-box' ? (result.billable * (rates.woodHT || 0)) + (result.billable * (rates.woodLoading || 0)) : 0))}</td>
+                    <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(result.plyCost + result.plyLabourCost + (result.billableSFT * (rates.plyNail || 0)) + (result.billableSFT * (rates.plyPlaining || 0)) + (type === 'ply-wood-pallet' ? (result.billableSFT * (rates.plyEB || 0)) + (result.billableSFT * (rates.plyLoading || 0)) : 0))}</td>
+                    <td style={{ py: '6px', textAlign: 'right', fontWeight: 'bold', color: 'var(--accent-wood)' }}>₹ {formatINR(result.subtotal)}</td>
                   </tr>
-                  {(wResult.profitPct > 0 || pResult.profitPct > 0) && (
+                  {result.profit > 0 && (
                     <tr>
                       <td style={{ py: '6px', fontWeight: 'medium' }}>Profit</td>
-                      <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(wResult.profit)} <span style={{ fontSize: '8px', color: '#64748b' }}>({wResult.profitPct}%)</span></td>
-                      <td style={{ py: '6px', textAlign: 'right' }}>₹ {formatINR(pResult.profit)} <span style={{ fontSize: '8px', color: '#64748b' }}>({pResult.profitPct}%)</span></td>
-                      <td style={{ py: '6px', textAlign: 'right', fontWeight: 'bold' }}>₹ {formatINR(wResult.profit + pResult.profit)}</td>
+                      <td style={{ py: '6px', textAlign: 'right' }} colSpan={2}></td>
+                      <td style={{ py: '6px', textAlign: 'right', fontWeight: 'bold' }}>₹ {formatINR(result.profit)} <span style={{ fontSize: '8px', color: '#64748b' }}>({result.profitPct}%)</span></td>
                     </tr>
                   )}
                   <tr className="quote-grand-row" style={{ borderTop: '2px solid #1e293b' }}>
                     <td style={{ py: '8px', fontWeight: 'bold' }}>Total Quote</td>
-                    <td style={{ py: '8px', textAlign: 'right', fontWeight: 'bold' }}>₹ {formatINR(wResult.finalTotal)}</td>
-                    <td style={{ py: '8px', textAlign: 'right', fontWeight: 'bold' }}>₹ {formatINR(pResult.finalTotal)}</td>
-                    <td style={{ py: '8px', textAlign: 'right', fontWeight: 'extrabold', fontSize: '11px', color: '#113f67' }}>₹ {formatINR(finalTotalVal)}</td>
+                    <td style={{ py: '8px', textAlign: 'right' }} colSpan={2}></td>
+                    <td style={{ py: '8px', textAlign: 'right', fontWeight: 'extrabold', fontSize: '11px', color: '#113f67' }}>₹ {formatINR(result.finalTotal)}</td>
                   </tr>
                 </tbody>
               </table>
 
               <div className="quote-rate-note flex flex-col gap-1 text-[9px] mt-3 border-t pt-2" style={{ borderColor: '#cbd5e1' }}>
-                <span>• Wood: ₹ {formatINR(wRates.cftRate)} / {wRates.rateUnit || 'CFT'} wood rate {wRates.wastePct > 0 ? `(Net + ${wRates.wastePct}% waste = billable)` : ''}</span>
-                <span>• Plywood: ₹ {formatINR(pRates.cftRate)} / {pRates.rateUnit || 'CFT'} plywood rate {pRates.wastePct > 0 ? `(Net + ${pRates.wastePct}% waste = billable)` : ''}</span>
+                <span>• Wood: ₹ {formatINR(rates.cftRate)} / CFT wood rate {result.vestCFT > 0 ? `(Net + ${type === 'ply-wood-pallet' ? 5 : 10}% waste = billable)` : ''}</span>
+                <span>• Plywood: ₹ {formatINR(rates.sftRate)} / SFT plywood rate {result.vestSFT > 0 ? `(Net + ${type === 'ply-wood-pallet' ? 7 : 10}% waste = billable)` : ''}</span>
               </div>
             </section>
           </div>
@@ -500,7 +403,7 @@ export default function QuoteSheet({
       ) : (
         <div className="quote-body-grid" style={{ display: 'grid', gridTemplateColumns: '1.3fr 0.9fr', gap: '10px' }}>
           <section className="quote-panel">
-            <h2>{activeUseWood ? `Parts and ${wRates.rateUnit || 'CFT'}` : `Parts and ${pRates.rateUnit || 'CFT'}`}</h2>
+            <h2>Parts Breakdown</h2>
             <table className="quote-table quote-parts-table">
               <thead>
                 <tr>
@@ -508,21 +411,19 @@ export default function QuoteSheet({
                   <th style={{ width: '38%' }}>Description</th>
                   <th style={{ width: '30%', whiteSpace: 'nowrap' }}>Size</th>
                   <th style={{ width: '10%', textAlign: 'center' }}>Qty</th>
-                  <th style={{ width: '10%', textAlign: 'right' }}>{(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</th>
+                  <th style={{ width: '10%', textAlign: 'right' }}>CFT</th>
                 </tr>
               </thead>
               <tbody>
-                {(activeUseWood ? wIncludedParts : pIncludedParts).map((part, index) => (
+                {includedParts.map((part, index) => (
                   <tr key={`${part.id}-${index}`}>
                     <td>{part.id}</td>
                     <td>{part.label}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>
-                      {`${part.useInchLength ? part.l + '"' : formatMm(part.l)} × ${part.useInchWidth ? part.w + '"' : formatMm(part.w)
-                        } × ${part.useInchHeight ? part.h + '"' : formatMm(part.h)
-                        }`}
+                      {`${formatPartDim(part.l)} × ${formatPartDim(part.w)} × ${formatPartDim(part.h)} mm`}
                     </td>
                     <td style={{ textAlign: 'center' }}>{formatQty(part.qty)}</td>
-                    <td>{(!activeUseWood && pRates.rateUnit === 'SFT') ? Number(part.sft || 0).toFixed(3) : formatCFT(part.cft)}</td>
+                    <td>{formatCFT(part.cft)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -534,18 +435,18 @@ export default function QuoteSheet({
             <table className="quote-table quote-cost-table">
               <tbody>
                 <tr className="quote-volume-row">
-                  <th>Net {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</th>
-                  <td>{(activeUseWood ? wRates : pRates).rateUnit === 'SFT' ? Number((activeUseWood ? wResult.totalSFT : pResult.totalSFT) || 0).toFixed(3) : formatCFT(activeUseWood ? wResult.totalCFT : pResult.totalCFT)}</td>
+                  <th>Net CFT</th>
+                  <td>{formatCFT(result.totalCFT)}</td>
                 </tr>
-                {((activeUseWood ? wRates : pRates).wastePct > 0) && (
+                {(result.vestCFT > 0) && (
                   <>
                     <tr className="quote-volume-row">
-                      <th>Waste Factor ({(activeUseWood ? wRates : pRates).wastePct}%)</th>
-                      <td>+ {formatCFT(activeUseWood ? wResult.vestCFT : pResult.vestCFT)}</td>
+                      <th>Waste Factor ({rates.wastePct ?? 10}%)</th>
+                      <td>+ {formatCFT(result.vestCFT)}</td>
                     </tr>
                     <tr className="quote-volume-row quote-billable-row">
-                      <th>Billable {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'}</th>
-                      <td>{formatCFT(activeUseWood ? wResult.billable : pResult.billable)}</td>
+                      <th>Billable CFT</th>
+                      <td>{formatCFT(result.billable)}</td>
                     </tr>
                   </>
                 )}
@@ -557,27 +458,27 @@ export default function QuoteSheet({
                 ))}
                 <tr className="quote-subtotal-row">
                   <th>Subtotal</th>
-                  <td>₹ {formatINR(activeUseWood ? wResult.subtotal : pResult.subtotal)}</td>
+                  <td>₹ {formatINR(result.subtotal)}</td>
                 </tr>
-                {((activeUseWood ? wRates : pRates).profitPct > 0) && (
+                {(result.profitPct > 0) && (
                   <tr>
-                    <th>Profit ({(activeUseWood ? wRates : pRates).profitPct}%)</th>
-                    <td>₹ {formatINR(activeUseWood ? wResult.profit : pResult.profit)}</td>
+                    <th>Profit ({result.profitPct}%)</th>
+                    <td>₹ {formatINR(result.profit)}</td>
                   </tr>
                 )}
                 <tr className="quote-grand-row">
                   <th>Total</th>
-                  <td>₹ {formatINR(finalTotalVal)}</td>
+                  <td>₹ {formatINR(result.finalTotal)}</td>
                 </tr>
               </tbody>
             </table>
 
             <div className="quote-rate-note">
-              <span>₹ {formatINR((activeUseWood ? wRates : pRates).cftRate)} / {(activeUseWood ? wRates : pRates).rateUnit || 'CFT'} rate</span>
-              {((activeUseWood ? wRates : pRates).wastePct > 0) && (
+              <span>₹ {formatINR(rates.cftRate)} / CFT rate</span>
+              {(result.vestCFT > 0) && (
                 <>
                   <span>•</span>
-                  <span>Net + {(activeUseWood ? wRates : pRates).wastePct}% waste = billable</span>
+                  <span>Net + {rates.wastePct ?? 10}% waste = billable</span>
                 </>
               )}
             </div>
@@ -617,3 +518,4 @@ export default function QuoteSheet({
     </section>
   );
 }
+

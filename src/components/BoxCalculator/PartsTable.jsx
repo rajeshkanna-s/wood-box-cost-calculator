@@ -1,10 +1,8 @@
-import React from 'react';
-
-export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPart, onRemovePart, onToggleExclusion, compact = false, isPlywood = false }) {
+export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPart, onRemovePart, onToggleExclusion, compact = false, type = 'pine-wood-box' }) {
   const formatCFT = (n) => Number(n || 0).toFixed(compact ? 3 : 4);
-  const safeWastePct = rates?.wastePct !== undefined ? rates.wastePct : 10;
+  const isCombined = type === 'ply-wood-pallet' || type === 'pine-plywood-box';
+  const isPlywoodOnly = false; // We don't have a plywood-only tab (all tabs are wood-only or combined)
 
-  // Compact spacing styles
   const thStyle = (left, right, extra = {}) => ({
     paddingLeft: left ? (compact ? '0.75rem' : '1.5rem') : (compact ? '0.25rem' : '0.5rem'),
     paddingRight: right ? (compact ? '0.75rem' : '1.5rem') : (compact ? '0.25rem' : '0.5rem'),
@@ -23,6 +21,26 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
     ...extra
   });
 
+  const getTitle = () => {
+    switch (type) {
+      case 'pine-wood-box':
+        return 'Pine Wood Box Parts';
+      case 'ply-wood-pallet':
+        return 'Plywood Pallet Parts';
+      case 'pine-wood-pallet':
+        return 'Pine Wood Pallet Parts';
+      case 'pine-plywood-box':
+        return 'Pine Plywood Box Parts';
+      default:
+        return 'Parts Breakdown';
+    }
+  };
+
+  const getUnitHeader = () => {
+    if (isCombined) return 'CFT / SFT';
+    return rates?.rateUnit || 'CFT';
+  };
+
   return (
     <div className="glass-card no-print flex flex-col h-full">
       <div className="section-header" style={{ padding: compact ? '0.75rem 1rem' : undefined }}>
@@ -34,7 +52,7 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
               </svg>
             </div>
             <h2 className="section-title" style={{ fontSize: compact ? '0.8rem' : undefined }}>
-              {isPlywood ? 'Plywood Parts Breakdown' : 'Pine Wood Parts Breakdown'}
+              {getTitle()}
             </h2>
           </div>
           <span className="text-xs font-mono" style={{ color: 'var(--text-light)', fontSize: compact ? '10px' : undefined }}>
@@ -54,12 +72,12 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
                 <th style={thStyle(false, false, { width: '11%' })}>W (mm)</th>
                 <th style={thStyle(false, false, { width: '11%' })}>H (mm)</th>
                 <th style={thStyle(false, false, { width: '11%', textAlign: 'center' })}>Qty</th>
-                <th style={thStyle(false, true, { width: '11%', textAlign: 'right' })}>{isPlywood ? 'SFT' : (rates?.rateUnit || 'CFT')}</th>
+                <th style={thStyle(false, true, { width: '11%', textAlign: 'right' })}>{getUnitHeader()}</th>
                 <th style={compact ? { width: '40px', padding: '0.5rem 0.25rem' } : { width: '60px' }}></th>
               </tr>
             </thead>
             <tbody>
-              {parts.map((p, i) => (
+              {(result?.partsWithCFT || parts).map((p, i) => (
                 <tr key={i} className={`group hover:bg-black/5 dark:hover:bg-white/5 transition-colors ${p.isExcluded ? 'opacity-40 grayscale' : ''}`}>
                   <td style={tdStyle(true, false)}>
                     {p.isCustom ? (
@@ -93,7 +111,7 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
                     <input 
                       type="number" 
                       className={`table-input w-full ${compact ? 'text-xs py-0.5 px-1' : ''}`} 
-                      value={p.l === 0 ? '' : p.l} 
+                      value={p.l === 0 ? '' : Number(Number(p.l || 0).toFixed(2))} 
                       onChange={(e) => onUpdatePart(i, 'l', e.target.value)}
                       disabled={p.isExcluded}
                     />
@@ -102,7 +120,7 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
                     <input 
                       type="number" 
                       className={`table-input w-full ${compact ? 'text-xs py-0.5 px-1' : ''}`} 
-                      value={p.w === 0 ? '' : p.w} 
+                      value={p.w === 0 ? '' : Number(Number(p.w || 0).toFixed(2))} 
                       onChange={(e) => onUpdatePart(i, 'w', e.target.value)}
                       disabled={p.isExcluded}
                     />
@@ -111,7 +129,7 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
                     <input 
                       type="number" 
                       className={`table-input w-full ${compact ? 'text-xs py-0.5 px-1' : ''}`} 
-                      value={p.h === 0 ? '' : p.h} 
+                      value={p.h === 0 ? '' : Number(Number(p.h || 0).toFixed(2))} 
                       onChange={(e) => onUpdatePart(i, 'h', e.target.value)}
                       disabled={p.isExcluded}
                     />
@@ -121,9 +139,9 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
                       type="number" 
                       className={`table-input w-full text-center inline-flex items-center justify-center text-xs font-semibold`} 
                       style={{ 
-                       height: compact ? '1.5rem' : '1.75rem',
-                       padding: compact ? '0.125rem 0.25rem' : undefined,
-                       color: 'var(--text-main)',
+                        height: compact ? '1.5rem' : '1.75rem',
+                        padding: compact ? '0.125rem 0.25rem' : undefined,
+                        color: 'var(--text-main)',
                       }}
                       value={p.qty === 0 ? '' : p.qty} 
                       onChange={(e) => onUpdatePart(i, 'qty', e.target.value)}
@@ -131,7 +149,7 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
                     />
                   </td>
                   <td style={tdStyle(false, true, { color: 'var(--text-main)', textAlign: 'right' })} className="font-mono font-semibold">
-                    {isPlywood ? Number(p.sft || 0).toFixed(compact ? 2 : 3) : formatCFT(p.cft)}
+                    {p.isPly ? `${Number(p.sft || 0).toFixed(compact ? 1 : 2)} SFT` : `${formatCFT(p.cft)} CFT`}
                   </td>
                   <td style={{ paddingRight: compact ? '0.5rem' : '1rem', width: compact ? '40px' : '60px' }}>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -170,59 +188,113 @@ export default function PartsTable({ parts, result, rates, onUpdatePart, onAddPa
             </tbody>
           </table>
         </div>
-        <div className="p-3 border-t mt-auto" style={{ borderColor: 'var(--table-border)', padding: compact ? '0.5rem 0.75rem' : undefined }}>
-          <button 
-            onClick={onAddPart}
-            className="flex items-center gap-2 text-sm font-medium transition-colors px-3 py-1.5 rounded-lg"
-            style={{ color: 'var(--accent-wood)', background: 'var(--card-inner-bg)', fontSize: compact ? '0.75rem' : undefined, padding: compact ? '0.25rem 0.5rem' : undefined }}
-          >
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Custom Part
-          </button>
+        <div className="p-3 border-t mt-auto flex gap-2" style={{ borderColor: 'var(--table-border)', padding: compact ? '0.5rem 0.75rem' : undefined }}>
+          {isCombined ? (
+            <>
+              <button 
+                onClick={() => onAddPart(false)}
+                className="flex items-center gap-1 text-sm font-medium transition-colors px-3 py-1.5 rounded-lg"
+                style={{ color: 'var(--accent-wood)', background: 'var(--card-inner-bg)', fontSize: compact ? '0.75rem' : undefined }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                + Wood Part
+              </button>
+              <button 
+                onClick={() => onAddPart(true)}
+                className="flex items-center gap-1 text-sm font-medium transition-colors px-3 py-1.5 rounded-lg"
+                style={{ color: 'var(--accent-blue)', background: 'var(--card-inner-bg)', fontSize: compact ? '0.75rem' : undefined }}
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                + Ply Panel
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={() => onAddPart(false)}
+              className="flex items-center gap-2 text-sm font-medium transition-colors px-3 py-1.5 rounded-lg"
+              style={{ color: 'var(--accent-wood)', background: 'var(--card-inner-bg)', fontSize: compact ? '0.75rem' : undefined, padding: compact ? '0.25rem 0.5rem' : undefined }}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Custom Part
+            </button>
+          )}
         </div>
       </div>
 
-      {/* CFT Summary Footer */}
+      {/* Summary Footer */}
       <div style={{ borderTop: '1px solid var(--table-border)', padding: compact ? '0.75rem 1rem' : '1rem 1.5rem' }} className="mt-auto">
         <div className="space-y-2">
-          {safeWastePct !== null && safeWastePct !== undefined && safeWastePct > 0 ? (
+          {isCombined ? (
+            // Dual summary for wood and plywood
+            <div className="grid grid-cols-2 gap-4">
+              {/* Wood side */}
+              <div className="space-y-1 text-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-500 block">Wood Volume</span>
+                <div className="flex justify-between">
+                  <span style={{ color: 'var(--text-light)' }}>Net Volume:</span>
+                  <span className="font-mono">{formatCFT(result.totalCFT)} CFT</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Waste ({type === 'ply-wood-pallet' ? 5 : 10}%):</span>
+                  <span className="font-mono">+{formatCFT(result.vestCFT)} CFT</span>
+                </div>
+                <div className="flex justify-between font-bold text-amber-400 pt-1 border-t border-slate-700/20">
+                  <span>Billable:</span>
+                  <span className="font-mono">{formatCFT(result.billable)} CFT</span>
+                </div>
+              </div>
+
+              {/* Plywood side */}
+              <div className="space-y-1 text-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-500 block">Plywood Area</span>
+                <div className="flex justify-between">
+                  <span style={{ color: 'var(--text-light)' }}>Net Area:</span>
+                  <span className="font-mono">{Number(result.totalSFT || 0).toFixed(2)} SFT</span>
+                </div>
+                <div className="flex justify-between text-slate-400">
+                  <span>Waste ({type === 'ply-wood-pallet' ? 7 : 10}%):</span>
+                  <span className="font-mono">+{Number(result.vestSFT || 0).toFixed(2)} SFT</span>
+                </div>
+                <div className="flex justify-between font-bold text-blue-400 pt-1 border-t border-slate-700/20">
+                  <span>Billable:</span>
+                  <span className="font-mono">{Number(result.billableSFT || 0).toFixed(2)} SFT</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            // Standard single material summary
             <>
               <div className="flex justify-between items-center text-sm" style={{ fontSize: compact ? '11px' : undefined }}>
-                <span style={{ color: 'var(--text-light)' }}>{isPlywood ? 'Net Area' : 'Net Volume'}</span>
+                <span style={{ color: 'var(--text-light)' }}>Net Volume</span>
                 <span className="font-mono font-medium" style={{ color: 'var(--text-main)' }}>
-                  {isPlywood ? `${Number(result.totalSFT || 0).toFixed(compact ? 2 : 3)} SFT` : `${formatCFT(result.totalCFT)} CFT`}
+                  {formatCFT(result.totalCFT)} CFT
                 </span>
               </div>
               <div className="flex justify-between items-center text-sm" style={{ fontSize: compact ? '11px' : undefined }}>
                 <span className="flex items-center gap-1.5" style={{ color: 'var(--text-light)' }}>
                   <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ backgroundColor: 'var(--accent-wood)' }} />
-                  + {safeWastePct}% Waste Factor
+                  + {rates.wastePct ?? 10}% Waste Factor
                 </span>
                 <span className="font-mono" style={{ color: 'var(--text-muted)' }}>
-                  {isPlywood ? `${Number(result.vestSFT || 0).toFixed(compact ? 2 : 3)} SFT` : `${formatCFT(result.vestCFT)} CFT`}
+                  {formatCFT(result.vestCFT)} CFT
                 </span>
               </div>
               <div className="glow-line my-2" />
               <div className="flex justify-between items-center">
                 <span className="text-sm font-semibold" style={{ color: 'var(--accent-wood)', fontSize: compact ? '11px' : undefined }}>
-                  {isPlywood ? 'Billable Area' : 'Billable Volume'}
+                  Billable Volume
                 </span>
                 <span className="font-mono text-lg font-bold" style={{ color: 'var(--accent-wood-light)', fontSize: compact ? '1rem' : undefined }}>
-                  {isPlywood ? `${Number(result.billableSFT || 0).toFixed(compact ? 2 : 3)} SFT` : `${formatCFT(result.billable)} CFT`}
+                  {formatCFT(result.billable)} CFT
                 </span>
               </div>
             </>
-          ) : (
-            <div className="flex justify-between items-center">
-              <span className="text-sm font-semibold" style={{ color: 'var(--accent-wood)', fontSize: compact ? '11px' : undefined }}>
-                {isPlywood ? 'Total Area' : 'Total Volume'}
-              </span>
-              <span className="font-mono text-lg font-bold" style={{ color: 'var(--accent-wood-light)', fontSize: compact ? '1rem' : undefined }}>
-                {isPlywood ? `${Number(result.totalSFT || 0).toFixed(compact ? 2 : 3)} SFT` : `${formatCFT(result.totalCFT)} CFT`}
-              </span>
-            </div>
           )}
         </div>
       </div>

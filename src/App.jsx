@@ -10,6 +10,7 @@ import QuoteSheet from './components/BoxCalculator/QuoteSheet';
 import PresetSelector from './components/BoxPresets/PresetSelector';
 import ClientPresetsCalculator from './components/BoxCalculator/ClientPresetsCalculator';
 import QuotePreviewModal from './components/BoxCalculator/QuotePreviewModal';
+import { CLIENT_PRESETS } from './engine/clientPresets';
 
 const DEFAULT_CLIENT_QUOTE_OPTIONS = {
   showParts: false,
@@ -21,32 +22,35 @@ const DEFAULT_CLIENT_QUOTE_OPTIONS = {
 
 export default function App() {
   const {
-    useWood, setUseWood,
-    usePly, setUsePly,
-    linkDims, setLinkDims,
-    woodDims, woodRates, woodParts, woodResult,
-    plyDims, plyRates, plyParts, plyResult,
+    activeTab,
+    setActiveTab,
+    dims,
+    rates,
+    parts,
     result,
-    updateWoodDim, updatePlyDim,
-    updateWoodRate, updatePlyRate,
-    changeWoodUnit, changePlyUnit,
+    updateDim,
+    updateRate,
+    changeUnit,
     loadPreset,
-    loadPlyPreset,
     updatePart,
     addCustomPart,
     removePart,
-    togglePartExclusion
+    togglePartExclusion,
+    resetParts
   } = useBoxCalculator();
 
   const [isDark, setIsDark] = useState(false);
-  const [activeTab, setActiveTab] = useState('custom'); // 'custom' or 'preset'
-  const [printData, setPrintData] = useState(null);
-  const [printMode, setPrintMode] = useState('detailed');
+  const [printMode, setPrintMode] = useState(null);
   const [isClientQuoteOpen, setIsClientQuoteOpen] = useState(false);
   const [clientQuoteOptions, setClientQuoteOptions] = useState(DEFAULT_CLIENT_QUOTE_OPTIONS);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState('detailed');
+  const [selectedCompanyId, setSelectedCompanyId] = useState(CLIENT_PRESETS[0]?.id || 'other');
   const [customClientName, setCustomClientName] = useState('');
+
+  const finalClientName = selectedCompanyId === 'other'
+    ? customClientName
+    : (CLIENT_PRESETS.find(c => c.id === selectedCompanyId)?.companyName || '');
 
   useEffect(() => {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -62,12 +66,7 @@ export default function App() {
     }
   }, [isDark]);
 
-  const openPreview = (mode, customData = null) => {
-    if (customData) {
-      setPrintData(customData);
-    } else if (activeTab !== 'preset') {
-      setPrintData(null);
-    }
+  const openPreview = (mode) => {
     setPreviewMode(mode);
     setIsPreviewOpen(true);
   };
@@ -75,13 +74,9 @@ export default function App() {
   const printQuote = (mode) => {
     setPrintMode(mode);
     window.requestAnimationFrame(() => {
-      // 500ms allows the browser to layout and decode the 4.7MB logo image before printing
+      // 500ms allows the browser to layout and decode any large logo/image before printing
       window.setTimeout(() => {
         window.print();
-        // Clear preset override data after the print dialog closes
-        if (activeTab !== 'preset') {
-          setPrintData(null);
-        }
         setPrintMode(null);
       }, 500);
     });
@@ -89,22 +84,18 @@ export default function App() {
 
   const downloadPDF = async (mode) => {
     const quoteStamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const activeResult = printData ? printData.result : result;
-    const cleanTotal = Math.round(activeResult.finalTotal || 0);
+    const cleanTotal = Math.round(result.finalTotal || 0);
     const filename = mode === 'client'
       ? `Elshaddai_Client_Quote_EWB-${quoteStamp}-${cleanTotal}.pdf`
       : `Elshaddai_Detailed_Quote_EWB-${quoteStamp}-${cleanTotal}.pdf`;
 
-    // Grab the already-rendered quote sheet from the preview modal viewport
-    // This ensures the PDF matches exactly what the user sees in the preview
     const viewport = document.querySelector('.preview-document-viewport');
     const liveSheet = viewport
       ? viewport.querySelector('.quote-sheet')
       : document.getElementById(mode === 'client' ? 'quote-sheet-client' : 'quote-sheet-detailed');
     if (!liveSheet) return;
 
-    // Create off-screen wrapper that is covered by current content (z-index: -9999)
-    // Position it at 0, 0 to ensure html2canvas captures it correctly without coordinate shift or crop
+    // Create off-screen wrapper
     const wrapper = document.createElement('div');
     wrapper.style.position = 'fixed';
     wrapper.style.left = '0';
@@ -123,7 +114,6 @@ export default function App() {
     container.style.position = 'relative';
 
     const clone = liveSheet.cloneNode(true);
-    // Apply the exact same styles as .preview-document-viewport .quote-sheet
     clone.style.cssText = `
       display: flex !important;
       flex-direction: column !important;
@@ -140,8 +130,7 @@ export default function App() {
       box-shadow: none !important;
     `;
 
-    // Fix gradient text — html2canvas cannot render background-clip: text.
-    // Use setProperty with 'important' to correctly override stylesheet !important rules.
+    // Fix gradient text for html2canvas
     clone.querySelectorAll('.brand-ewp-text, .quote-ewp-title').forEach((el) => {
       el.style.setProperty('background', 'none', 'important');
       el.style.setProperty('background-image', 'none', 'important');
@@ -163,7 +152,6 @@ export default function App() {
     wrapper.appendChild(container);
     document.body.appendChild(wrapper);
 
-    // Wait for the browser to lay out the clone
     await new Promise((resolve) => setTimeout(resolve, 200));
 
     try {
@@ -239,42 +227,83 @@ export default function App() {
 
           {/* Tab Navigation Segmented Control */}
           <div className="flex justify-center mt-6 no-print">
-            <div className="tab-navigation-bar">
+            <div className="tab-navigation-bar flex flex-wrap gap-2 justify-center bg-transparent border-none">
               <button
-                className={`tab-navigation-btn ${activeTab === 'custom' ? 'is-active' : ''}`}
-                onClick={() => {
-                  setActiveTab('custom');
-                  setPrintData(null);
-                }}
+                className={`tab-navigation-btn ${activeTab === 'pine-wood-box' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('pine-wood-box')}
               >
-                Custom Box Calculator
+                PINE WOOD BOX
               </button>
               <button
-                className={`tab-navigation-btn ${activeTab === 'preset' ? 'is-active' : ''}`}
-                onClick={() => {
-                  setActiveTab('preset');
-                  setPrintData(null);
-                }}
+                className={`tab-navigation-btn ${activeTab === 'ply-wood-pallet' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('ply-wood-pallet')}
               >
-                Client-Wise Presets
+                PLY WOOD PALLET
+              </button>
+              <button
+                className={`tab-navigation-btn ${activeTab === 'pine-wood-pallet' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('pine-wood-pallet')}
+              >
+                PINE WOOD PALLET
+              </button>
+              <button
+                className={`tab-navigation-btn ${activeTab === 'pine-plywood-box' ? 'is-active' : ''}`}
+                onClick={() => setActiveTab('pine-plywood-box')}
+              >
+                PINE PLYWOOD BOX
               </button>
             </div>
           </div>
         </header>
 
         <div className="space-y-6">
-          {activeTab === 'custom' ? (
-            <>
-              <div className="glass-card p-5 animate-slide-up no-print" style={{ animationDelay: '0.05s', animationFillMode: 'both' }}>
-                <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="section-icon shrink-0">
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                    </div>
+          <div className="glass-card p-5 animate-slide-up no-print" style={{ animationDelay: '0.05s', animationFillMode: 'both' }}>
+            <div className="flex flex-col gap-4 items-center w-full">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full max-w-4xl">
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="section-icon shrink-0">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                  </div>
+                  <label htmlFor="company-select" className="text-sm font-semibold whitespace-nowrap" style={{ color: 'var(--text-main)' }}>
+                    Client / Company Name:
+                  </label>
+                </div>
+                <select
+                  id="company-select"
+                  value={selectedCompanyId}
+                  onChange={(e) => setSelectedCompanyId(e.target.value)}
+                  className="premium-select w-full"
+                  style={{ 
+                    maxWidth: '650px', 
+                    background: 'var(--card-inner-bg)', 
+                    color: 'var(--text-main)', 
+                    border: '1px solid var(--card-border)', 
+                    borderRadius: '8px', 
+                    padding: '10px 14px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    textAlign: 'left',
+                    outline: 'none',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                  }}
+                >
+                  {CLIENT_PRESETS.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.companyName}
+                    </option>
+                  ))}
+                  <option value="other">Other (Custom Client)</option>
+                </select>
+              </div>
+
+              {selectedCompanyId === 'other' && (
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full max-w-4xl animate-fade-in border-t pt-4" style={{ borderColor: 'var(--card-border)' }}>
+                  <div className="flex items-center gap-3 shrink-0">
                     <label htmlFor="global-client-name" className="text-sm font-semibold whitespace-nowrap" style={{ color: 'var(--text-main)' }}>
-                      Client / Company Name:
+                      Enter Custom Client Name:
                     </label>
                   </div>
                   <input
@@ -283,201 +312,69 @@ export default function App() {
                     value={customClientName}
                     onChange={(e) => setCustomClientName(e.target.value)}
                     placeholder="e.g. NTN, Motherson, etc."
-                    className="premium-input text-center"
-                    style={{ width: '320px', maxWidth: '100%' }}
+                    className="premium-input w-full"
+                    style={{ 
+                      maxWidth: '650px',
+                      padding: '10px 14px',
+                      fontSize: '14px',
+                      outline: 'none',
+                      textAlign: 'left'
+                    }}
                   />
                 </div>
-              </div>
+              )}
+            </div>
+          </div>
 
-              {/* Material Toggle Card */}
-              <div className="glass-card p-4 flex flex-wrap items-center justify-between gap-4 no-print animate-slide-up" style={{ animationDelay: '0.08s', animationFillMode: 'both' }}>
-                <div className="flex items-center gap-6">
-                  <span className="text-sm font-bold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>Include in Quote:</span>
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={useWood}
-                      onChange={(e) => {
-                        if (!e.target.checked && !usePly) return; // Prevent disabling both
-                        setUseWood(e.target.checked);
-                      }}
-                      className="rounded border-slate-700 bg-[#111217] text-amber-500 focus:ring-amber-500/20"
-                    />
-                    <span className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>Pine Wood</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={usePly}
-                      onChange={(e) => {
-                        if (!e.target.checked && !useWood) return; // Prevent disabling both
-                        setUsePly(e.target.checked);
-                      }}
-                      className="rounded border-slate-700 bg-[#111217] text-blue-500 focus:ring-blue-500/20"
-                    />
-                    <span className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>Plywood</span>
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-6">
-                  <label className="flex items-center gap-2 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={linkDims}
-                      onChange={(e) => setLinkDims(e.target.checked)}
-                      className="rounded border-slate-700 bg-[#111217] text-emerald-500 focus:ring-emerald-500/20"
-                    />
-                    <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-light)' }}>Link Dimensions</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Responsive Layout Grid for Inputs (Dimensions & Rates) */}
-              <div className="space-y-6">
-                {/* Dimensions Row */}
-                <div className={`grid grid-cols-1 ${useWood && usePly ? 'xl:grid-cols-2' : ''} gap-6`}>
-                  {useWood && (
-                    <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.12s', animationFillMode: 'both' }}>
-                      <div className="border-l-4 border-amber-500 pl-3">
-                        <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Pine Wood Dimensions</h3>
-                      </div>
-                      <div className="flex-1">
-                        <DimensionInputs
-                          dims={woodDims}
-                          onChange={updateWoodDim}
-                          onUnitChange={changeWoodUnit}
-                          showPresetSelector={true}
-                          onSelectPreset={loadPreset}
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {usePly && (
-                    <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.14s', animationFillMode: 'both' }}>
-                      <div className="border-l-4 border-blue-500 pl-3">
-                        <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Plywood Dimensions</h3>
-                      </div>
-                      <div className="flex-1">
-                        <DimensionInputs
-                          dims={plyDims}
-                          onChange={updatePlyDim}
-                          onUnitChange={changePlyUnit}
-                          showPresetSelector={true}
-                          onSelectPreset={loadPlyPreset}
-                          isPlywood={true}
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Rates Row */}
-                <div className={`grid grid-cols-1 ${useWood && usePly ? 'xl:grid-cols-2' : ''} gap-6`}>
-                  {useWood && (
-                    <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
-                      <div className="border-l-4 border-amber-500 pl-3">
-                        <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Pine Wood Rates & Parameters</h3>
-                      </div>
-                      <div className="flex-1">
-                        <RateInputs rates={woodRates} onChange={updateWoodRate} />
-                      </div>
-                    </div>
-                  )}
-
-                  {usePly && (
-                    <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.17s', animationFillMode: 'both' }}>
-                      <div className="border-l-4 border-blue-500 pl-3">
-                        <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Plywood Rates & Parameters</h3>
-                      </div>
-                      <div className="flex-1">
-                        <RateInputs rates={plyRates} onChange={updatePlyRate} isPlywood={true} />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Parts Breakdown stacked or side-by-side */}
-              <div className={`grid grid-cols-1 ${useWood && usePly ? 'xl:grid-cols-2' : ''} gap-6 no-print`}>
-                {useWood && (
-                  <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.18s', animationFillMode: 'both' }}>
-                    <div className="border-l-4 border-amber-500 pl-3">
-                      <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Pine Wood Parts Breakdown</h3>
-                    </div>
-                    <div className="flex-1">
-                      <PartsTable
-                        parts={woodResult.partsWithCFT}
-                        result={woodResult}
-                        rates={woodRates}
-                        onUpdatePart={(idx, fld, val) => updatePart('wood', idx, fld, val)}
-                        onAddPart={() => addCustomPart('wood')}
-                        onRemovePart={(idx) => removePart('wood', idx)}
-                        onToggleExclusion={(idx) => togglePartExclusion('wood', idx)}
-                        compact={useWood && usePly}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {usePly && (
-                  <div className="flex flex-col h-full space-y-3 animate-slide-up" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
-                    <div className="border-l-4 border-blue-500 pl-3">
-                      <h3 className="text-lg font-bold" style={{ color: 'var(--text-main)' }}>Plywood Parts Breakdown</h3>
-                    </div>
-                    <div className="flex-1">
-                      <PartsTable
-                        parts={plyResult.partsWithCFT}
-                        result={plyResult}
-                        rates={plyRates}
-                        onUpdatePart={(idx, fld, val) => updatePart('ply', idx, fld, val)}
-                        onAddPart={() => addCustomPart('ply')}
-                        onRemovePart={(idx) => removePart('ply', idx)}
-                        onToggleExclusion={(idx) => togglePartExclusion('ply', idx)}
-                        compact={useWood && usePly}
-                        isPlywood={true}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Combined Cost Summary (Last Option to Show) */}
-              <div className="animate-slide-up" style={{ animationDelay: '0.24s', animationFillMode: 'both' }}>
-                <CostSummary
-                  result={result}
-                  rates={useWood ? woodRates : plyRates}
-                  useWood={useWood}
-                  usePly={usePly}
-                  woodResult={woodResult}
-                  plyResult={plyResult}
-                  onPrintQuote={() => printQuote('detailed')}
-                  onDownloadPDF={() => openPreview('detailed')}
-                  onOpenClientQuote={() => {
-                    setPrintMode('client');
-                    setIsClientQuoteOpen(true);
-                  }}
-                />
-              </div>
-            </>
-          ) : (
-            <div className="animate-slide-up animate-fade-in">
-              <ClientPresetsCalculator
-                onPrintQuote={(presetData) => {
-                  setPrintData(presetData);
-                  printQuote('detailed');
-                }}
-                onDownloadPDF={(presetData) => {
-                  openPreview('detailed', presetData);
-                }}
-                onOpenClientQuote={(presetData) => {
-                  setPrintData(presetData);
-                  setPrintMode('client');
-                  setIsClientQuoteOpen(true);
-                }}
+          {/* Responsive Layout Grid for Inputs (Dimensions & Rates) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="animate-slide-up" style={{ animationDelay: '0.12s', animationFillMode: 'both' }}>
+              <DimensionInputs
+                dims={dims}
+                onChange={updateDim}
+                onUnitChange={changeUnit}
+                showPresetSelector={true}
+                onSelectPreset={loadPreset}
+                isPlywood={activeTab === 'ply-wood-pallet' || activeTab === 'pine-plywood-box'}
+                type={activeTab}
               />
             </div>
-          )}
+            <div className="animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
+              <RateInputs 
+                rates={rates} 
+                onChange={updateRate} 
+                type={activeTab} 
+              />
+            </div>
+          </div>
+
+          {/* Parts Breakdown */}
+          <div className="animate-slide-up no-print" style={{ animationDelay: '0.18s', animationFillMode: 'both' }}>
+            <PartsTable
+              parts={parts}
+              result={result}
+              rates={rates}
+              onUpdatePart={updatePart}
+              onAddPart={addCustomPart}
+              onRemovePart={removePart}
+              onToggleExclusion={togglePartExclusion}
+              type={activeTab}
+            />
+          </div>
+
+          {/* Cost Summary */}
+          <div className="animate-slide-up" style={{ animationDelay: '0.24s', animationFillMode: 'both' }}>
+            <CostSummary
+              result={result}
+              rates={rates}
+              onPrintQuote={() => printQuote(printMode || 'detailed')}
+              onDownloadPDF={() => openPreview('detailed')}
+              onOpenClientQuote={() => {
+                setPrintMode('client');
+                setIsClientQuoteOpen(true);
+              }}
+            />
+          </div>
         </div>
 
         <footer className="mt-12 pb-6 text-center no-print">
@@ -502,48 +399,35 @@ export default function App() {
           openPreview('client');
         }}
       />
+      
+      {/* Printable / Export Quote Sheets */}
       <QuoteSheet
-        dims={printData ? printData.dims : (useWood ? woodDims : plyDims)}
-        rates={printData ? printData.rates : (useWood ? woodRates : plyRates)}
-        result={printData ? printData.result : result}
-        clientName={printData ? printData.clientName : customClientName}
+        dims={dims}
+        rates={rates}
+        result={result}
+        clientName={finalClientName}
         active={printMode === 'detailed'}
-        useWood={printData ? (printData.useWood !== undefined ? printData.useWood : true) : useWood}
-        usePly={printData ? (printData.usePly !== undefined ? printData.usePly : false) : usePly}
-        woodDims={printData ? printData.woodDims : woodDims}
-        woodRates={printData ? printData.woodRates : woodRates}
-        woodResult={printData ? (printData.wood || printData.result) : woodResult}
-        plyDims={printData ? printData.plyDims : plyDims}
-        plyRates={printData ? printData.plyRates : plyRates}
-        plyResult={printData ? printData.ply : plyResult}
+        type={activeTab}
       />
       <ClientQuoteSheet
-        dims={printData ? printData.dims : (useWood ? woodDims : plyDims)}
-        rates={printData ? printData.rates : (useWood ? woodRates : plyRates)}
-        result={printData ? printData.result : result}
-        clientName={printData ? printData.clientName : customClientName}
+        dims={dims}
+        rates={rates}
+        result={result}
+        clientName={finalClientName}
         options={clientQuoteOptions}
         active={printMode === 'client'}
-        useWood={printData ? (printData.useWood !== undefined ? printData.useWood : true) : useWood}
-        usePly={printData ? (printData.usePly !== undefined ? printData.usePly : false) : usePly}
-        woodDims={printData ? printData.woodDims : woodDims}
-        woodRates={printData ? printData.woodRates : woodRates}
-        woodResult={printData ? (printData.wood || printData.result) : woodResult}
-        plyDims={printData ? printData.plyDims : plyDims}
-        plyRates={printData ? printData.plyRates : plyRates}
-        plyResult={printData ? printData.ply : plyResult}
+        type={activeTab}
       />
       <QuotePreviewModal
         isOpen={isPreviewOpen}
         mode={previewMode}
-        dims={printData ? printData.dims : (useWood ? woodDims : plyDims)}
-        rates={printData ? printData.rates : (useWood ? woodRates : plyRates)}
-        result={printData ? printData.result : result}
-        clientName={printData ? printData.clientName : customClientName}
+        dims={dims}
+        rates={rates}
+        result={result}
+        clientName={finalClientName}
         options={clientQuoteOptions}
         onClose={() => {
           setIsPreviewOpen(false);
-          setPrintData(null);
         }}
         onPrint={() => {
           printQuote(previewMode);
@@ -553,15 +437,9 @@ export default function App() {
           downloadPDF(previewMode);
           setIsPreviewOpen(false);
         }}
-        useWood={printData ? (printData.useWood !== undefined ? printData.useWood : true) : useWood}
-        usePly={printData ? (printData.usePly !== undefined ? printData.usePly : false) : usePly}
-        woodDims={printData ? printData.woodDims : woodDims}
-        woodRates={printData ? printData.woodRates : woodRates}
-        woodResult={printData ? (printData.wood || printData.result) : woodResult}
-        plyDims={printData ? printData.plyDims : plyDims}
-        plyRates={printData ? printData.plyRates : plyRates}
-        plyResult={printData ? printData.ply : plyResult}
+        type={activeTab}
       />
     </div>
   );
 }
+
