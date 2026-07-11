@@ -347,6 +347,32 @@ export function useBoxCalculator() {
           // Reset to defaults for presets without overrides
           nextRates = { ...DEFAULT_PINE_WOOD_PALLET_RATES };
         }
+      } else if (activeTab === 'pine-plywood-box') {
+        const key = `${preset.l}x${preset.w}x${preset.h}`;
+        const ppbRateOverrides = {
+          // Preset 1: 1140x800x195 - matches defaults exactly
+          // Preset 2,3: 1170x810x370 / 1170x810x480 - woodLabour=150
+          '1170x810x370': { woodLabour: 150 },
+          '1170x810x480': { woodLabour: 150 },
+          // Preset 4: 1540x590x1000 - sftRate=38, plyLabour=10, woodLabour=200, loading=10
+          '1540x590x1000': { sftRate: 38, plyLabour: 10, woodLabour: 200, woodLoading: 10 },
+          // Preset 5: 1730x590x1000 - sftRate=38, plyLabour=10, woodLabour=200, ht=10, loading=10
+          '1730x590x1000': { sftRate: 38, plyLabour: 10, woodLabour: 200, woodHT: 10, woodLoading: 10 },
+          // Preset 6: 1920x590x1000 - sftRate=38, plyLabour=10, ht=10, loading=10
+          '1920x590x1000': { sftRate: 38, plyLabour: 10, woodHT: 10, woodLoading: 10 },
+          // Presets 7-9: x785 variants - sftRate=38, plyLabour=10, ht=10, loading=10
+          '1540x785x1000': { sftRate: 38, plyLabour: 10, woodHT: 10, woodLoading: 10 },
+          '1730x785x1000': { sftRate: 38, plyLabour: 10, woodHT: 10, woodLoading: 10 },
+          '1920x785x1000': { sftRate: 38, plyLabour: 10, woodHT: 10, woodLoading: 10 },
+          // Preset 10: 2170x500x600 - cftRate=800, plyLabour=10, ht=10, loading=10
+          '2170x500x600': { cftRate: 800, plyLabour: 10, woodHT: 10, woodLoading: 10 },
+        };
+        const overrides = ppbRateOverrides[key];
+        if (overrides) {
+          nextRates = { ...DEFAULT_PINE_PLYWOOD_BOX_RATES, ...overrides };
+        } else {
+          nextRates = { ...DEFAULT_PINE_PLYWOOD_BOX_RATES };
+        }
       }
 
       return {
