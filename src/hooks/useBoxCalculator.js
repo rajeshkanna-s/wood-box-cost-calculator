@@ -107,6 +107,41 @@ export function useBoxCalculator() {
     const wIn = convertToInches(w, unit);
     const hIn = convertToInches(h, unit);
 
+    const Lmm = Math.round(lIn * 25.4);
+    const Wmm = Math.round(wIn * 25.4);
+    const Hmm = Math.round(hIn * 25.4);
+
+    if (tab === 'ply-wood-pallet') {
+      const key = `${Lmm}x${Wmm}x${Hmm}`;
+      if (key === '1140x1180x195') {
+        return [
+          { id: 'TOP',  label: 'Top Ply Deck (TOP)',   l: 1140, w: 1180, h: 12, qty: 1, isPly: true },
+          { id: 'LEG',  label: 'Leg Ply Planks (LEG)', l: 1140, w: 90,  h: 12, qty: 3, isPly: true },
+          { id: 'BL',   label: 'Chip Blocks (BL)',      l: 90,  w: 90,  h: 90,  qty: 9, isPly: false },
+        ];
+      }
+      if (key === '980x1140x135') {
+        return [
+          { id: 'TOP',  label: 'Top Ply Deck (TOP)',   l: 980,  w: 1140, h: 12, qty: 1, isPly: true },
+          { id: 'LEG',  label: 'Leg Ply Planks (LEG)', l: 1140, w: 90,  h: 12, qty: 3, isPly: true },
+          { id: 'BACK1', label: 'Back Ply Planks (BACK-1)', l: 980, w: 90,  h: 12, qty: 2, isPly: true },
+          { id: 'BACK2', label: 'Back Ply Planks (BACK-2)', l: 960, w: 90,  h: 12, qty: 3, isPly: true },
+          { id: 'BL1',  label: 'Chip Blocks (BL-1)',    l: 130, w: 90,  h: 90,  qty: 6, isPly: false },
+          { id: 'BL2',  label: 'Chip Blocks (BL-2)',    l: 90,  w: 90,  h: 90,  qty: 3, isPly: false },
+        ];
+      }
+      if (key === '1490x1100x135') {
+        return [
+          { id: 'TOP',  label: 'Top Ply Deck (TOP)',   l: 1490, w: 1100, h: 12, qty: 1, isPly: true },
+          { id: 'LEG',  label: 'Leg Ply Planks (LEG)', l: 1100, w: 90,  h: 12, qty: 4, isPly: true },
+          { id: 'BACK1', label: 'Back Ply Planks (BACK-1)', l: 1490, w: 90,  h: 12, qty: 2, isPly: true },
+          { id: 'BACK2', label: 'Back Ply Planks (BACK-2)', l: 920, w: 90,  h: 12, qty: 4, isPly: true },
+          { id: 'BL1',  label: 'Chip Blocks (BL-1)',    l: 130, w: 90,  h: 90,  qty: 8, isPly: false },
+          { id: 'BL2',  label: 'Chip Blocks (BL-2)',    l: 90,  w: 90,  h: 90,  qty: 3, isPly: false },
+        ];
+      }
+    }
+
     switch (tab) {
       case 'pine-wood-box':
         return buildPineWoodBoxParts(lIn, wIn, hIn);
@@ -205,9 +240,93 @@ export function useBoxCalculator() {
       };
       const nextParts = getGeneratedParts(activeTab, nextDims.l, nextDims.w, nextDims.h, nextDims.unit);
 
+      // Preset-specific rates for plywood pallet to match spreadsheets exactly
+      let nextRates = prev.rates;
+      if (activeTab === 'ply-wood-pallet') {
+        const key = `${preset.l}x${preset.w}x${preset.h}`;
+        if (key === '1200x1100x195') {
+          nextRates = {
+            ...prev.rates,
+            cftRate: 590,
+            sftRate: 38,
+            woodLabour: 190,
+            plyLabour: 5,
+            woodNail: 50,
+            plyNail: 1,
+            woodPlaining: 5,
+            plyPlaining: 1,
+            woodEB: 3,
+            plyEB: 1,
+            woodLoading: 3,
+            plyLoading: 1,
+            wastePctWood: 5,
+            wastePctPly: 7,
+            profitPct: 20
+          };
+        } else if (key === '1140x1180x195') {
+          nextRates = {
+            ...prev.rates,
+            cftRate: 600,
+            sftRate: 38,
+            woodLabour: 200,
+            plyLabour: 5,
+            woodNail: 50,
+            plyNail: 1,
+            woodPlaining: 10,
+            plyPlaining: 1,
+            woodEB: 5,
+            plyEB: 1,
+            woodLoading: 4,
+            plyLoading: 1,
+            wastePctWood: 5,
+            wastePctPly: 7,
+            profitPct: 20
+          };
+        } else if (key === '980x1140x135') {
+          nextRates = {
+            ...prev.rates,
+            cftRate: 590,
+            sftRate: 38,
+            woodLabour: 190,
+            plyLabour: 5,
+            woodNail: 50,
+            plyNail: 1,
+            woodPlaining: 15,
+            plyPlaining: 0,
+            woodEB: 5,
+            plyEB: 0,
+            woodLoading: 40,
+            plyLoading: 0,
+            wastePctWood: 5,
+            wastePctPly: 7,
+            profitPct: 20
+          };
+        } else if (key === '1490x1100x135') {
+          nextRates = {
+            ...prev.rates,
+            cftRate: 590,
+            sftRate: 38,
+            woodLabour: 190,
+            plyLabour: 5,
+            woodNail: 50,
+            plyNail: 1,
+            woodPlaining: 15,
+            plyPlaining: 0,
+            woodEB: 5,
+            plyEB: 0,
+            woodLoading: 40,
+            plyLoading: 0,
+            wastePctWood: 5,
+            wastePctPly: 7,
+            profitPct: 20
+          };
+        }
+      }
+
       return {
         ...prev,
         dims: nextDims,
+        rates: nextRates,
         parts: nextParts
       };
     });
