@@ -298,7 +298,7 @@ export function useBoxCalculator() {
             woodLoading: 40,
             plyLoading: 0,
             wastePctWood: 5,
-            wastePctPly: 7,
+            wastePctPly: 10,
             profitPct: 20
           };
         } else if (key === '1490x1100x135') {
@@ -317,7 +317,7 @@ export function useBoxCalculator() {
             woodLoading: 40,
             plyLoading: 0,
             wastePctWood: 5,
-            wastePctPly: 7,
+            wastePctPly: 10,
             profitPct: 20
           };
         }
