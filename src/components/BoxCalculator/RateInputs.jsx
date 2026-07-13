@@ -76,8 +76,9 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                     return (
                       <React.Fragment key={cr.id}>
                         <div style={{ borderTop: '1px solid var(--table-border)' }} />
-                        <div className="flex items-center justify-between py-2.5 group">
-                          <div className="flex items-center gap-1.5 flex-1 mr-2">
+                        <div className="py-2.5 space-y-1.5 group">
+                          {/* Row 1: Delete button + Label input */}
+                          <div className="flex items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => {
@@ -85,7 +86,7 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                                 onChange('customRates', nextCustom);
                               }}
                               disabled={disabled}
-                              className="text-red-500 hover:text-red-700 disabled:opacity-40 p-1 rounded bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="text-red-500 hover:text-red-700 disabled:opacity-40 p-1.5 rounded bg-red-500/10 transition-colors"
                               title={`Delete ${cr.label}`}
                             >
                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -101,11 +102,12 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                                 onChange('customRates', nextCustom);
                               }}
                               disabled={disabled}
-                              className="table-input w-full text-sm py-0.5 px-1.5"
-                              placeholder="Wood Parameter"
+                              className="table-input w-full text-sm py-1 px-2"
+                              placeholder="Wood Parameter Name"
                             />
                           </div>
-                          <div className="flex items-center gap-2">
+                          {/* Row 2: Type dropdown + Value input */}
+                          <div className="flex items-center justify-end gap-2 pl-8">
                             <select
                               value={cr.type || 'currency'}
                               onChange={(e) => {
@@ -130,8 +132,8 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                               }}
                               min="0"
                               disabled={disabled}
-                              className="premium-input"
-                              style={{ width: '6rem' }}
+                              className="premium-input text-xs"
+                              style={{ width: '6rem', padding: '0.25rem 0.5rem', height: '1.75rem' }}
                             />
                           </div>
                         </div>
@@ -191,8 +193,9 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                     return (
                       <React.Fragment key={cr.id}>
                         <div style={{ borderTop: '1px solid var(--table-border)' }} />
-                        <div className="flex items-center justify-between py-2.5 group">
-                          <div className="flex items-center gap-1.5 flex-1 mr-2">
+                        <div className="py-2.5 space-y-1.5 group">
+                          {/* Row 1: Delete button + Label input */}
+                          <div className="flex items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => {
@@ -200,7 +203,7 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                                 onChange('customRates', nextCustom);
                               }}
                               disabled={disabled}
-                              className="text-red-500 hover:text-red-700 disabled:opacity-40 p-1 rounded bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="text-red-500 hover:text-red-700 disabled:opacity-40 p-1.5 rounded bg-red-500/10 transition-colors"
                               title={`Delete ${cr.label}`}
                             >
                               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -216,11 +219,12 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                                 onChange('customRates', nextCustom);
                               }}
                               disabled={disabled}
-                              className="table-input w-full text-sm py-0.5 px-1.5"
-                              placeholder="Ply Parameter"
+                              className="table-input w-full text-sm py-1 px-2"
+                              placeholder="Ply Parameter Name"
                             />
                           </div>
-                          <div className="flex items-center gap-2">
+                          {/* Row 2: Type dropdown + Value input */}
+                          <div className="flex items-center justify-end gap-2 pl-8">
                             <select
                               value={cr.type || 'currency'}
                               onChange={(e) => {
@@ -245,8 +249,8 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                               }}
                               min="0"
                               disabled={disabled}
-                              className="premium-input"
-                              style={{ width: '6rem' }}
+                              className="premium-input text-xs"
+                              style={{ width: '6rem', padding: '0.25rem 0.5rem', height: '1.75rem' }}
                             />
                           </div>
                         </div>
@@ -378,15 +382,17 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
               {(rates.customRates || []).map((cr, idx) => (
                 <React.Fragment key={cr.id}>
                   <div style={{ borderTop: '1px solid var(--table-border)' }} />
-                  <div className="flex items-center justify-between py-2.5 group">
-                    <div className="flex items-center gap-2 flex-1 mr-2">
+                  <div className="py-2.5 space-y-1.5 group">
+                    {/* Row 1: Delete button + Label input */}
+                    <div className="flex items-center gap-1.5">
                       <button
+                        type="button"
                         onClick={() => {
                           const nextCustom = rates.customRates.filter((_, i) => i !== idx);
                           onChange('customRates', nextCustom);
                         }}
                         disabled={disabled}
-                        className="text-red-500 hover:text-red-700 disabled:opacity-40 p-1 rounded bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="text-red-500 hover:text-red-700 disabled:opacity-40 p-1.5 rounded bg-red-500/10 transition-colors"
                         title={`Delete ${cr.label}`}
                       >
                         <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -402,11 +408,12 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                           onChange('customRates', nextCustom);
                         }}
                         disabled={disabled}
-                        className="table-input w-full text-sm py-0.5 px-1.5"
+                        className="table-input w-full text-sm py-1 px-2"
                         placeholder="Parameter Name"
                       />
                     </div>
-                    <div className="flex items-center gap-2">
+                    {/* Row 2: Type dropdown + Value input */}
+                    <div className="flex items-center justify-end gap-2 pl-8">
                       <select
                         value={cr.type || 'currency'}
                         onChange={(e) => {
@@ -431,8 +438,8 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                         }}
                         min="0"
                         disabled={disabled}
-                        className="premium-input"
-                        style={{ width: '6rem' }}
+                        className="premium-input text-xs"
+                        style={{ width: '6rem', padding: '0.25rem 0.5rem', height: '1.75rem' }}
                       />
                     </div>
                   </div>
