@@ -34,6 +34,7 @@ export default function CostSummary({
         ...(result.plainingCost > 0 ? [{ label: 'Plaining', value: result.plainingCost }] : []),
         ...(result.ebCost > 0 ? [{ label: 'EB', value: result.ebCost }] : []),
         ...(result.htCost > 0 ? [{ label: 'HT', value: result.htCost }] : []),
+        ...(result.customCostItems || []).map(item => ({ label: item.label, value: item.value || 0 }))
       ]
     : [];
 
@@ -55,6 +56,17 @@ export default function CostSummary({
           items.push({ label: 'HT Cost', w: result.billable * (rates.woodHT || 0), p: 0 });
           items.push({ label: 'Loading Cost', w: result.billable * (rates.woodLoading || 0), p: 0 });
         }
+
+        if (result.customCostItems && result.customCostItems.length > 0) {
+          result.customCostItems.forEach(item => {
+            items.push({
+              label: `${item.label}${item.isPercent ? ' (' + item.rateValue + '%)' : ''}`,
+              w: item.w || 0,
+              p: item.p || 0
+            });
+          });
+        }
+
         return items.filter(item => (item.w + item.p) > 0);
       })()
     : [];
@@ -100,8 +112,8 @@ export default function CostSummary({
               {/* Subtotal */}
               <tr className="border-t font-semibold" style={{ borderColor: 'var(--table-border)' }}>
                 <td className="py-3 text-sm" style={{ color: 'var(--text-main)' }}>Subtotal</td>
-                <td className="py-3 text-right font-mono text-sm" style={{ color: 'var(--text-main)' }}>₹ {formatINR(result.woodCost + result.woodLabourCost + (result.billable * (rates.woodNail || 0)) + (result.billable * (rates.woodPlaining || 0)) + (type === 'ply-wood-pallet' ? (result.billable * (rates.woodEB || 0)) + (result.billable * (rates.woodLoading || 0)) : 0) + (type === 'pine-plywood-box' ? (result.billable * (rates.woodHT || 0)) + (result.billable * (rates.woodLoading || 0)) : 0))}</td>
-                <td className="py-3 text-right font-mono text-sm" style={{ color: 'var(--text-main)' }}>₹ {formatINR(result.plyCost + result.plyLabourCost + (result.billableSFT * (rates.plyNail || 0)) + (result.billableSFT * (rates.plyPlaining || 0)) + (type === 'ply-wood-pallet' ? (result.billableSFT * (rates.plyEB || 0)) + (result.billableSFT * (rates.plyLoading || 0)) : 0))}</td>
+                <td className="py-3 text-right font-mono text-sm" style={{ color: 'var(--text-main)' }}>₹ {formatINR(result.woodSubtotal)}</td>
+                <td className="py-3 text-right font-mono text-sm" style={{ color: 'var(--text-main)' }}>₹ {formatINR(result.plySubtotal)}</td>
                 <td className="py-3 text-right font-mono text-sm font-bold" style={{ color: 'var(--accent-wood-light)' }}>₹ {formatINR(result.subtotal)}</td>
               </tr>
 

@@ -105,6 +105,7 @@ export default function ClientQuoteSheet({
         ...(result.plainingCost > 0 ? [{ label: 'Plaining', value: result.plainingCost }] : []),
         ...(result.ebCost > 0 ? [{ label: 'EB', value: result.ebCost }] : []),
         ...(result.htCost > 0 ? [{ label: 'HT', value: result.htCost }] : []),
+        ...(result.customCostItems || []).map(item => ({ label: item.label, value: item.value || 0 }))
       ]
     : [];
 
@@ -124,6 +125,17 @@ export default function ClientQuoteSheet({
           items.push({ label: 'HT Cost', wVal: result.billable * (rates.woodHT || 0), pVal: 0 });
           items.push({ label: 'Loading Cost', wVal: result.billable * (rates.woodLoading || 0), pVal: 0 });
         }
+
+        if (result.customCostItems && result.customCostItems.length > 0) {
+          result.customCostItems.forEach(item => {
+            items.push({
+              label: `${item.label}${item.isPercent ? ' (' + item.rateValue + '%)' : ''}`,
+              wVal: item.w || 0,
+              pVal: item.p || 0
+            });
+          });
+        }
+
         return items.filter(item => (item.wVal + item.pVal) > 0).map(item => ({
           ...item,
           combVal: item.wVal + item.pVal
@@ -383,8 +395,8 @@ export default function ClientQuoteSheet({
                           ))}
                           <tr className="quote-subtotal-row border-t" style={{ borderColor: '#cbd5e1' }}>
                             <td style={{ fontWeight: 'bold' }}>Subtotal</td>
-                            <td style={{ textAlign: 'right' }}>₹ {formatINR(result.woodCost + result.woodLabourCost + (result.billable * (rates.woodNail || 0)) + (result.billable * (rates.woodPlaining || 0)) + (type === 'ply-wood-pallet' ? (result.billable * (rates.woodEB || 0)) + (result.billable * (rates.woodLoading || 0)) : 0) + (type === 'pine-plywood-box' ? (result.billable * (rates.woodHT || 0)) + (result.billable * (rates.woodLoading || 0)) : 0))}</td>
-                            <td style={{ textAlign: 'right' }}>₹ {formatINR(result.plyCost + result.plyLabourCost + (result.billableSFT * (rates.plyNail || 0)) + (result.billableSFT * (rates.plyPlaining || 0)) + (type === 'ply-wood-pallet' ? (result.billableSFT * (rates.plyEB || 0)) + (result.billableSFT * (rates.plyLoading || 0)) : 0))}</td>
+                            <td style={{ textAlign: 'right' }}>₹ {formatINR(result.woodSubtotal)}</td>
+                            <td style={{ textAlign: 'right' }}>₹ {formatINR(result.plySubtotal)}</td>
                             <td style={{ textAlign: 'right', fontWeight: 'bold' }}>₹ {formatINR(result.subtotal)}</td>
                           </tr>
                           {result.profit > 0 && (

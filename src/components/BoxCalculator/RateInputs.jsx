@@ -68,6 +68,106 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                       <InputRow label="Loading" value={rates.woodLoading} onChange={(v) => onChange('woodLoading', v)} unit="₹" min="0" disabled={disabled} />
                     </>
                   )}
+
+                  {/* Custom Wood parameters list */}
+                  {(rates.customRates || []).filter(cr => cr.category === 'wood').map((cr) => {
+                    const fullIdx = rates.customRates.findIndex(item => item.id === cr.id);
+                    if (fullIdx === -1) return null;
+                    return (
+                      <React.Fragment key={cr.id}>
+                        <div style={{ borderTop: '1px solid var(--table-border)' }} />
+                        <div className="flex items-center justify-between py-2.5 group">
+                          <div className="flex items-center gap-1.5 flex-1 mr-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextCustom = rates.customRates.filter(item => item.id !== cr.id);
+                                onChange('customRates', nextCustom);
+                              }}
+                              disabled={disabled}
+                              className="text-red-500 hover:text-red-700 disabled:opacity-40 p-1 rounded bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title={`Delete ${cr.label}`}
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                            <input
+                              type="text"
+                              value={cr.label}
+                              onChange={(e) => {
+                                const nextCustom = [...rates.customRates];
+                                nextCustom[fullIdx] = { ...nextCustom[fullIdx], label: e.target.value };
+                                onChange('customRates', nextCustom);
+                              }}
+                              disabled={disabled}
+                              className="table-input w-full text-sm py-0.5 px-1.5"
+                              placeholder="Wood Parameter"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={cr.type || 'currency'}
+                              onChange={(e) => {
+                                const nextCustom = [...rates.customRates];
+                                nextCustom[fullIdx] = { ...nextCustom[fullIdx], type: e.target.value };
+                                onChange('customRates', nextCustom);
+                              }}
+                              disabled={disabled}
+                              className="header-unit-select text-xs font-semibold"
+                              style={{ width: '3.5rem', padding: '0.125rem 0.25rem', height: '1.75rem' }}
+                            >
+                              <option value="currency">₹</option>
+                              <option value="percent">%</option>
+                            </select>
+                            <input
+                              type="number"
+                              value={cr.value === 0 ? '' : cr.value}
+                              onChange={(e) => {
+                                const nextCustom = [...rates.customRates];
+                                nextCustom[fullIdx] = { ...nextCustom[fullIdx], value: e.target.value === '' ? 0 : (Number(e.target.value) || 0) };
+                                onChange('customRates', nextCustom);
+                              }}
+                              min="0"
+                              disabled={disabled}
+                              className="premium-input"
+                              style={{ width: '6rem' }}
+                            />
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentCustom = rates.customRates || [];
+                      const newCustom = [
+                        ...currentCustom,
+                        {
+                          id: 'cr_' + Date.now() + Math.random().toString(36).substr(2, 5),
+                          label: 'Custom Wood Parameter',
+                          value: 0,
+                          type: 'currency',
+                          category: 'wood'
+                        }
+                      ];
+                      onChange('customRates', newCustom);
+                    }}
+                    disabled={disabled}
+                    className="mt-3 w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors border"
+                    style={{
+                      borderColor: 'var(--accent-wood-light)',
+                      color: 'var(--accent-wood-light)',
+                      background: 'transparent',
+                    }}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Wood Parameter
+                  </button>
                 </div>
 
                 {/* Column 2: Plywood Parameters */}
@@ -83,6 +183,106 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                       <InputRow label="Loading" value={rates.plyLoading} onChange={(v) => onChange('plyLoading', v)} unit="₹" min="0" disabled={disabled} />
                     </>
                   )}
+
+                  {/* Custom Plywood parameters list */}
+                  {(rates.customRates || []).filter(cr => cr.category === 'ply').map((cr) => {
+                    const fullIdx = rates.customRates.findIndex(item => item.id === cr.id);
+                    if (fullIdx === -1) return null;
+                    return (
+                      <React.Fragment key={cr.id}>
+                        <div style={{ borderTop: '1px solid var(--table-border)' }} />
+                        <div className="flex items-center justify-between py-2.5 group">
+                          <div className="flex items-center gap-1.5 flex-1 mr-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextCustom = rates.customRates.filter(item => item.id !== cr.id);
+                                onChange('customRates', nextCustom);
+                              }}
+                              disabled={disabled}
+                              className="text-red-500 hover:text-red-700 disabled:opacity-40 p-1 rounded bg-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title={`Delete ${cr.label}`}
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                            <input
+                              type="text"
+                              value={cr.label}
+                              onChange={(e) => {
+                                const nextCustom = [...rates.customRates];
+                                nextCustom[fullIdx] = { ...nextCustom[fullIdx], label: e.target.value };
+                                onChange('customRates', nextCustom);
+                              }}
+                              disabled={disabled}
+                              className="table-input w-full text-sm py-0.5 px-1.5"
+                              placeholder="Ply Parameter"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={cr.type || 'currency'}
+                              onChange={(e) => {
+                                const nextCustom = [...rates.customRates];
+                                nextCustom[fullIdx] = { ...nextCustom[fullIdx], type: e.target.value };
+                                onChange('customRates', nextCustom);
+                              }}
+                              disabled={disabled}
+                              className="header-unit-select text-xs font-semibold"
+                              style={{ width: '3.5rem', padding: '0.125rem 0.25rem', height: '1.75rem' }}
+                            >
+                              <option value="currency">₹</option>
+                              <option value="percent">%</option>
+                            </select>
+                            <input
+                              type="number"
+                              value={cr.value === 0 ? '' : cr.value}
+                              onChange={(e) => {
+                                const nextCustom = [...rates.customRates];
+                                nextCustom[fullIdx] = { ...nextCustom[fullIdx], value: e.target.value === '' ? 0 : (Number(e.target.value) || 0) };
+                                onChange('customRates', nextCustom);
+                              }}
+                              min="0"
+                              disabled={disabled}
+                              className="premium-input"
+                              style={{ width: '6rem' }}
+                            />
+                          </div>
+                        </div>
+                      </React.Fragment>
+                    );
+                  })}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const currentCustom = rates.customRates || [];
+                      const newCustom = [
+                        ...currentCustom,
+                        {
+                          id: 'cr_' + Date.now() + Math.random().toString(36).substr(2, 5),
+                          label: 'Custom Ply Parameter',
+                          value: 0,
+                          type: 'currency',
+                          category: 'ply'
+                        }
+                      ];
+                      onChange('customRates', newCustom);
+                    }}
+                    disabled={disabled}
+                    className="mt-3 w-full flex items-center justify-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors border"
+                    style={{
+                      borderColor: 'var(--accent-wood-light)',
+                      color: 'var(--accent-wood-light)',
+                      background: 'transparent',
+                    }}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add Ply Parameter
+                  </button>
                 </div>
               </div>
 

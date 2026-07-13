@@ -193,7 +193,84 @@ export function calculateProductCost(type, parts, rates) {
     loadingCost = billableCFT * (rates.woodLoading ?? 3) + billableSFT * (rates.plyLoading ?? 1);
   }
 
-  const subtotal = woodCost + plyCost + labourCost + nailCost + transportCost + plainingCost + ebCost + htCost + packingCost + clampCost + loadingCost;
+  // Calculate custom rates
+  let customWoodCost = 0;
+  let customPlyCost = 0;
+  let customGeneralCost = 0;
+  const customCostItems = [];
+  const customRatesList = rates.customRates || [];
+  
+  // 1. First pass: Currency-based custom rates
+  customRatesList.forEach(cr => {
+    if (cr.type !== 'percent') {
+      const val = Number(cr.value) || 0;
+      let cost = 0;
+      if (cr.category === 'wood') {
+        cost = billableCFT * val;
+        customWoodCost += cost;
+        customCostItems.push({ id: cr.id, label: cr.label, w: cost, p: 0, type: 'wood', isPercent: false, rateValue: val });
+      } else if (cr.category === 'ply') {
+        cost = billableSFT * val;
+        customPlyCost += cost;
+        customCostItems.push({ id: cr.id, label: cr.label, w: 0, p: cost, type: 'ply', isPercent: false, rateValue: val });
+      } else {
+        // general / single material
+        const isWoodOnly = type === 'pine-wood-box' || type === 'pine-wood-pallet';
+        cost = isWoodOnly ? (billableCFT * val) : val;
+        customGeneralCost += cost;
+        customCostItems.push({ id: cr.id, label: cr.label, w: isWoodOnly ? cost : 0, p: 0, type: 'general', isPercent: false, rateValue: val, value: cost });
+      }
+    }
+  });
+
+  const baseSubtotal = woodCost + plyCost + labourCost + nailCost + transportCost + plainingCost + ebCost + htCost + packingCost + clampCost + loadingCost + customWoodCost + customPlyCost + customGeneralCost;
+
+  // 2. Second pass: Percentage-based custom rates (applied on base subtotal)
+  let customPercentCost = 0;
+  customRatesList.forEach(cr => {
+    if (cr.type === 'percent') {
+      const pct = Number(cr.value) || 0;
+      const cost = baseSubtotal * (pct / 100);
+      customPercentCost += cost;
+      if (cr.category === 'wood') {
+        customWoodCost += cost;
+        customCostItems.push({ id: cr.id, label: cr.label, w: cost, p: 0, type: 'wood', isPercent: true, rateValue: pct });
+      } else if (cr.category === 'ply') {
+        customPlyCost += cost;
+        customCostItems.push({ id: cr.id, label: cr.label, w: 0, p: cost, type: 'ply', isPercent: true, rateValue: pct });
+      } else {
+        customGeneralCost += cost;
+        customCostItems.push({ id: cr.id, label: cr.label, w: cost, p: 0, type: 'general', isPercent: true, rateValue: pct, value: cost });
+      }
+    }
+  });
+
+  const subtotal = baseSubtotal + customPercentCost;
+
+  let woodSubtotal = 0;
+  let plySubtotal = 0;
+
+  if (type === 'pine-wood-box' || type === 'pine-wood-pallet') {
+    woodSubtotal = subtotal;
+    plySubtotal = 0;
+  } else if (type === 'pine-plywood-box') {
+    woodSubtotal = woodCost + woodLabourCost + nailCost + plainingCost + htCost + loadingCost + customWoodCost + customGeneralCost;
+    plySubtotal = plyCost + plyLabourCost + customPlyCost;
+  } else if (type === 'ply-wood-pallet') {
+    const woodNailCost = billableCFT * (rates.woodNail ?? 50);
+    const woodPlainingCost = billableCFT * (rates.woodPlaining ?? 5);
+    const woodEBCost = billableCFT * (rates.woodEB ?? 3);
+    const woodLoadingCost = billableCFT * (rates.woodLoading ?? 3);
+
+    const plyNailCost = billableSFT * (rates.plyNail ?? 1);
+    const plyPlainingCost = billableSFT * (rates.plyPlaining ?? 1);
+    const plyEBCost = billableSFT * (rates.plyEB ?? 1);
+    const plyLoadingCost = billableSFT * (rates.plyLoading ?? 1);
+
+    woodSubtotal = woodCost + woodLabourCost + woodNailCost + woodPlainingCost + woodEBCost + woodLoadingCost + customWoodCost + customGeneralCost;
+    plySubtotal = plyCost + plyLabourCost + plyNailCost + plyPlainingCost + plyEBCost + plyLoadingCost + customPlyCost;
+  }
+
   const profit = subtotal * (profitPct / 100);
   const finalTotal = subtotal + profit;
 
@@ -210,6 +287,8 @@ export function calculateProductCost(type, parts, rates) {
     totalSFT, vestSFT, billableSFT,
     woodCost, plyCost, labourCost, woodLabourCost, plyLabourCost, nailCost,
     transportCost, plainingCost, ebCost, htCost, packingCost, clampCost, loadingCost,
+    customWoodCost, customPlyCost, customGeneralCost, customCostItems,
+    woodSubtotal, plySubtotal,
     subtotal, profitPct, profit, finalTotal,
     rates,
     type
