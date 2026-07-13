@@ -130,6 +130,11 @@ export function calculateProductCost(type, parts, rates) {
 
   const profitPct = rates.profitPct !== undefined ? rates.profitPct : 20;
 
+  const getRate = (key, defaultVal) => {
+    if (rates.deletedRates && rates.deletedRates.includes(key)) return 0;
+    return rates[key] ?? defaultVal;
+  };
+
   // Initialize all cost breakdown fields
   let woodCost = 0;
   let plyCost = 0;
@@ -146,51 +151,52 @@ export function calculateProductCost(type, parts, rates) {
   let loadingCost = 0;
 
   if (type === 'pine-wood-box') {
-    const cftRate = rates.cftRate ?? 925;
+    const cftRate = getRate('cftRate', 925);
     woodCost = billableCFT * cftRate;
-    labourCost = billableCFT * (rates.labour ?? 190);
-    nailCost = billableCFT * (rates.nail ?? 20);
-    transportCost = billableCFT * (rates.transport ?? 50);
-    packingCost = billableCFT * (rates.packing ?? 50);
-    clampCost = billableCFT * (rates.clamp ?? 30);
+    labourCost = billableCFT * getRate('labour', 190);
+    nailCost = billableCFT * getRate('nail', 20);
+    transportCost = billableCFT * getRate('transport', 50);
+    packingCost = billableCFT * getRate('packing', 50);
+    clampCost = billableCFT * getRate('clamp', 30);
   } else if (type === 'pine-wood-pallet') {
-    const cftRate = rates.cftRate ?? 925;
+    const cftRate = getRate('cftRate', 925);
     woodCost = billableCFT * cftRate;
-    labourCost = billableCFT * (rates.labour ?? 150);
-    nailCost = billableCFT * (rates.nail ?? 30);
-    transportCost = billableCFT * (rates.transport ?? 65);
-    plainingCost = billableCFT * (rates.plaining ?? 10);
-    ebCost = billableCFT * (rates.eb ?? 5);
-    htCost = billableCFT * (rates.ht ?? 20);
+    labourCost = billableCFT * getRate('labour', 150);
+    nailCost = billableCFT * getRate('nail', 30);
+    transportCost = billableCFT * getRate('transport', 65);
+    plainingCost = billableCFT * getRate('plaining', 10);
+    ebCost = billableCFT * getRate('eb', 5);
+    htCost = billableCFT * getRate('ht', 20);
   } else if (type === 'pine-plywood-box') {
-    woodCost = billableCFT * (rates.cftRate ?? 925);
-    plyCost = billableSFT * (rates.sftRate ?? 35);
-    woodLabourCost = billableCFT * (rates.woodLabour ?? 190);
-    plyLabourCost = billableSFT * (rates.plyLabour ?? 7);
+    woodCost = billableCFT * getRate('cftRate', 925);
+    plyCost = billableSFT * getRate('sftRate', 35);
+    woodLabourCost = billableCFT * getRate('woodLabour', 190);
+    plyLabourCost = billableSFT * getRate('plyLabour', 7);
     labourCost = woodLabourCost + plyLabourCost;
-    nailCost = billableCFT * (rates.woodNail ?? 30);
-    plainingCost = billableCFT * (rates.woodPlaining ?? 20);
-    htCost = billableCFT * (rates.woodHT ?? 15);
-    loadingCost = billableCFT * (rates.woodLoading ?? 5);
+    nailCost = billableCFT * getRate('woodNail', 30);
+    plainingCost = billableCFT * getRate('woodPlaining', 20);
+    htCost = billableCFT * getRate('woodHT', 15);
+    loadingCost = billableCFT * getRate('woodLoading', 5);
   } else if (type === 'ply-wood-pallet') {
-    woodCost = billableCFT * (rates.cftRate ?? 590);
-    plyCost = billableSFT * (rates.sftRate ?? 38);
+    woodCost = billableCFT * getRate('cftRate', 590);
+    plyCost = billableSFT * getRate('sftRate', 38);
     
     // Check for the Sheet 2 formula typo preset: 1140 x 1180 x 195
-    if (rates.cftRate === 600 && rates.woodLabour === 200 && rates.plyLabour === 5) {
+    const hasDeletedTypo = rates.deletedRates && (rates.deletedRates.includes('cftRate') || rates.deletedRates.includes('woodLabour'));
+    if (rates.cftRate === 600 && rates.woodLabour === 200 && rates.plyLabour === 5 && !hasDeletedTypo) {
       woodLabourCost = totalCFT * rates.woodLabour + totalSFT;
     } else {
-      woodLabourCost = billableCFT * (rates.woodLabour ?? 190);
+      woodLabourCost = billableCFT * getRate('woodLabour', 190);
     }
     
-    plyLabourCost = billableSFT * (rates.plyLabour ?? 5);
+    plyLabourCost = billableSFT * getRate('plyLabour', 5);
     labourCost = woodLabourCost + plyLabourCost;
     
     // Formula: Wood CFT * rate + Ply SFT * rate
-    nailCost = billableCFT * (rates.woodNail ?? 50) + billableSFT * (rates.plyNail ?? 1);
-    plainingCost = billableCFT * (rates.woodPlaining ?? 5) + billableSFT * (rates.plyPlaining ?? 1);
-    ebCost = billableCFT * (rates.woodEB ?? 3) + billableSFT * (rates.plyEB ?? 1);
-    loadingCost = billableCFT * (rates.woodLoading ?? 3) + billableSFT * (rates.plyLoading ?? 1);
+    nailCost = billableCFT * getRate('woodNail', 50) + billableSFT * getRate('plyNail', 1);
+    plainingCost = billableCFT * getRate('woodPlaining', 5) + billableSFT * getRate('plyPlaining', 1);
+    ebCost = billableCFT * getRate('woodEB', 3) + billableSFT * getRate('plyEB', 1);
+    loadingCost = billableCFT * getRate('woodLoading', 3) + billableSFT * getRate('plyLoading', 1);
   }
 
   // Calculate custom rates
