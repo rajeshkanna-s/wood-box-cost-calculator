@@ -39,7 +39,7 @@ function getQuoteMeta(result) {
 
   return {
     quoteDateLabel,
-    quoteNo: `EWB-${quoteStamp}-${Math.round(finalTotalVal)}`,
+    quoteNo: `EWP-${quoteStamp}-${Math.round(finalTotalVal)}`,
   };
 }
 
@@ -208,7 +208,7 @@ export default function ClientQuoteSheet({
                         <dd>{formatCFT(result.totalCFT)}</dd>
                       </div>
                       <div>
-                        <dt>Waste ({type === 'ply-wood-pallet' ? 5 : 10}%)</dt>
+                        <dt>Waste ({rates.wastePctWood ?? (type === 'ply-wood-pallet' ? 5 : 10)}%)</dt>
                         <dd>{formatCFT(result.vestCFT)}</dd>
                       </div>
                       <div className="quote-emphasis-row">
@@ -236,7 +236,7 @@ export default function ClientQuoteSheet({
                           <dd>{Number(result.totalSFT || 0).toFixed(2)}</dd>
                         </div>
                         <div>
-                          <dt>Waste ({type === 'ply-wood-pallet' ? 7 : 10}%)</dt>
+                          <dt>Waste ({rates.wastePctPly ?? (type === 'ply-wood-pallet' ? 7 : 10)}%)</dt>
                           <dd>{Number(result.vestSFT || 0).toFixed(2)}</dd>
                         </div>
                         <div className="quote-emphasis-row">
@@ -371,8 +371,8 @@ export default function ClientQuoteSheet({
                           </tr>
                           <tr className="quote-volume-row">
                             <td style={{ fontWeight: 'semibold' }}>Waste Factor</td>
-                            <td style={{ textAlign: 'right' }}>+ {formatCFT(result.vestCFT)} <span style={{ fontSize: '8px', color: '#64748b' }}>({type === 'ply-wood-pallet' ? 5 : 10}%)</span></td>
-                            <td style={{ textAlign: 'right' }}>+ {Number(result.vestSFT || 0).toFixed(2)} <span style={{ fontSize: '8px', color: '#64748b' }}>({type === 'ply-wood-pallet' ? 7 : 10}%)</span></td>
+                            <td style={{ textAlign: 'right' }}>+ {formatCFT(result.vestCFT)} <span style={{ fontSize: '8px', color: '#64748b' }}>({rates.wastePctWood ?? (type === 'ply-wood-pallet' ? 5 : 10)}%)</span></td>
+                            <td style={{ textAlign: 'right' }}>+ {Number(result.vestSFT || 0).toFixed(2)} <span style={{ fontSize: '8px', color: '#64748b' }}>({rates.wastePctPly ?? (type === 'ply-wood-pallet' ? 7 : 10)}%)</span></td>
                             <td style={{ textAlign: 'right', fontWeight: 'bold' }}>-</td>
                           </tr>
                           <tr className="quote-volume-row quote-billable-row">

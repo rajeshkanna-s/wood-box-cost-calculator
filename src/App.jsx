@@ -86,8 +86,8 @@ export default function App() {
     const quoteStamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const cleanTotal = Math.round(result.finalTotal || 0);
     const filename = mode === 'client'
-      ? `Elshaddai_Client_Quote_EWB-${quoteStamp}-${cleanTotal}.pdf`
-      : `Elshaddai_Detailed_Quote_EWB-${quoteStamp}-${cleanTotal}.pdf`;
+      ? `Elshaddai_Client_Quote_EWP-${quoteStamp}-${cleanTotal}.pdf`
+      : `Elshaddai_Detailed_Quote_EWP-${quoteStamp}-${cleanTotal}.pdf`;
 
     const viewport = document.querySelector('.preview-document-viewport');
     const liveSheet = viewport

@@ -419,7 +419,7 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                     <input
                       type="number"
                       value={rates.wastePctWood ?? ''}
-                      onChange={(e) => onChange('wastePctWood', e.target.value === '' ? 10 : Number(e.target.value))}
+                      onChange={(e) => onChange('wastePctWood', e.target.value === '' ? null : Number(e.target.value))}
                       min="0" max="100" disabled={disabled}
                       className="premium-input w-full text-center"
                     />
@@ -429,7 +429,7 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                     <input
                       type="number"
                       value={rates.wastePctPly ?? ''}
-                      onChange={(e) => onChange('wastePctPly', e.target.value === '' ? 10 : Number(e.target.value))}
+                      onChange={(e) => onChange('wastePctPly', e.target.value === '' ? null : Number(e.target.value))}
                       min="0" max="100" disabled={disabled}
                       className="premium-input w-full text-center"
                     />
@@ -439,7 +439,7 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                     <input
                       type="number"
                       value={rates.profitPct ?? ''}
-                      onChange={(e) => onChange('profitPct', e.target.value === '' ? 20 : Number(e.target.value))}
+                      onChange={(e) => onChange('profitPct', e.target.value === '' ? null : Number(e.target.value))}
                       min="0" max="100" disabled={disabled}
                       className="premium-input w-full text-center"
                     />
@@ -586,7 +586,7 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                       <input
                         type="number"
                         value={rates.wastePct === null || rates.wastePct === undefined ? '' : rates.wastePct}
-                        onChange={(e) => onChange('wastePct', e.target.value === '' ? 10 : Number(e.target.value))}
+                        onChange={(e) => onChange('wastePct', e.target.value === '' ? null : Number(e.target.value))}
                         min="0" max="100" disabled={disabled}
                         className="premium-input"
                         style={{ width: '6rem' }}
@@ -605,7 +605,7 @@ export default function RateInputs({ rates, onChange, type = 'pine-wood-box', di
                       <input
                         type="number"
                         value={rates.profitPct === null || rates.profitPct === undefined ? '' : rates.profitPct}
-                        onChange={(e) => onChange('profitPct', e.target.value === '' ? 20 : Number(e.target.value))}
+                        onChange={(e) => onChange('profitPct', e.target.value === '' ? null : Number(e.target.value))}
                         min="0" max="100" disabled={disabled}
                         className="premium-input"
                         style={{ width: '6rem' }}

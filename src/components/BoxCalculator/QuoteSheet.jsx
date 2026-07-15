@@ -39,7 +39,7 @@ function getQuoteMeta(result) {
 
   return {
     quoteDateLabel,
-    quoteNo: `EWB-${quoteStamp}-${Math.round(finalTotalVal)}`,
+    quoteNo: `EWP-${quoteStamp}-${Math.round(finalTotalVal)}`,
   };
 }
 
@@ -200,7 +200,7 @@ export default function QuoteSheet({
                   <dd>{formatCFT(result.totalCFT)}</dd>
                 </div>
                 <div>
-                  <dt>Waste ({type === 'ply-wood-pallet' ? 5 : 10}%)</dt>
+                  <dt>Waste ({rates.wastePctWood ?? (type === 'ply-wood-pallet' ? 5 : 10)}%)</dt>
                   <dd>{formatCFT(result.vestCFT)}</dd>
                 </div>
                 <div className="quote-emphasis-row">
@@ -229,7 +229,7 @@ export default function QuoteSheet({
                   <dd>{Number(result.totalSFT || 0).toFixed(2)}</dd>
                 </div>
                 <div>
-                  <dt>Waste ({type === 'ply-wood-pallet' ? 7 : 10}%)</dt>
+                  <dt>Waste ({rates.wastePctPly ?? (type === 'ply-wood-pallet' ? 7 : 10)}%)</dt>
                   <dd>{Number(result.vestSFT || 0).toFixed(2)}</dd>
                 </div>
                 <div className="quote-emphasis-row">
@@ -408,8 +408,8 @@ export default function QuoteSheet({
               </table>
 
               <div className="quote-rate-note flex flex-col gap-1 text-[9px] mt-3 border-t pt-2" style={{ borderColor: '#cbd5e1' }}>
-                <span>• Wood: ₹ {formatINR(rates.cftRate)} / CFT wood rate {result.vestCFT > 0 ? `(Net + ${type === 'ply-wood-pallet' ? 5 : 10}% waste = billable)` : ''}</span>
-                <span>• Plywood: ₹ {formatINR(rates.sftRate)} / SFT plywood rate {result.vestSFT > 0 ? `(Net + ${type === 'ply-wood-pallet' ? 7 : 10}% waste = billable)` : ''}</span>
+                <span>• Wood: ₹ {formatINR(rates.cftRate)} / CFT wood rate {result.vestCFT > 0 ? `(Net + ${rates.wastePctWood ?? (type === 'ply-wood-pallet' ? 5 : 10)}% waste = billable)` : ''}</span>
+                <span>• Plywood: ₹ {formatINR(rates.sftRate)} / SFT plywood rate {result.vestSFT > 0 ? `(Net + ${rates.wastePctPly ?? (type === 'ply-wood-pallet' ? 7 : 10)}% waste = billable)` : ''}</span>
               </div>
             </section>
           </div>

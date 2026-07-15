@@ -111,15 +111,15 @@ export function calculateProductCost(type, parts, rates) {
   let wastePctPly = 10;
 
   if (type === 'ply-wood-pallet') {
-    wastePctWood = rates.wastePctWood !== undefined ? rates.wastePctWood : 5;
-    wastePctPly = rates.wastePctPly !== undefined ? rates.wastePctPly : 7;
+    wastePctWood = rates.wastePctWood ?? 5;
+    wastePctPly = rates.wastePctPly ?? 7;
   } else if (type === 'pine-plywood-box') {
-    wastePctWood = rates.wastePctWood !== undefined ? rates.wastePctWood : 10;
-    wastePctPly = rates.wastePctPly !== undefined ? rates.wastePctPly : 10;
+    wastePctWood = rates.wastePctWood ?? 10;
+    wastePctPly = rates.wastePctPly ?? 10;
   } else {
     // Single-material calculators
-    wastePctWood = rates.wastePct !== undefined ? rates.wastePct : 10;
-    wastePctPly = rates.wastePct !== undefined ? rates.wastePct : 10;
+    wastePctWood = rates.wastePct ?? 10;
+    wastePctPly = rates.wastePct ?? 10;
   }
 
   const vestCFT = totalCFT * (wastePctWood / 100);
@@ -128,7 +128,7 @@ export function calculateProductCost(type, parts, rates) {
   const vestSFT = totalSFT * (wastePctPly / 100);
   const billableSFT = totalSFT + vestSFT;
 
-  const profitPct = rates.profitPct !== undefined ? rates.profitPct : 20;
+  const profitPct = rates.profitPct ?? 20;
 
   const getRate = (key, defaultVal) => {
     if (rates.deletedRates && rates.deletedRates.includes(key)) return 0;

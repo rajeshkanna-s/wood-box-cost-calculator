@@ -563,7 +563,7 @@
 .quote-brand-sub {
   color: #475569 !important;
   font-size: 9px !important;
-  font-family: 'Playfair Display', 'Brush Script MT', 'Lucida Handwriting', cursive, Georgia, serif;
+  font-family: 'Inter', -apple-system, sans-serif !important;
   font-style: italic;
   font-weight: 600;
   margin: 0 !important;

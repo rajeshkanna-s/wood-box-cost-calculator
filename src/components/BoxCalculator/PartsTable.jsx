@@ -261,7 +261,7 @@ export default function PartsTable({ parts, result, rates, dims, onUpdatePart, o
                   <span className="font-mono">{formatCFT(result.totalCFT)} CFT</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
-                  <span>Waste ({type === 'ply-wood-pallet' ? 5 : 10}%):</span>
+                  <span>Waste ({rates.wastePctWood ?? (type === 'ply-wood-pallet' ? 5 : 10)}%):</span>
                   <span className="font-mono">+{formatCFT(result.vestCFT)} CFT</span>
                 </div>
                 <div className="flex justify-between font-bold text-amber-400 pt-1 border-t border-slate-700/20">
@@ -278,7 +278,7 @@ export default function PartsTable({ parts, result, rates, dims, onUpdatePart, o
                   <span className="font-mono">{Number(result.totalSFT || 0).toFixed(2)} SFT</span>
                 </div>
                 <div className="flex justify-between text-slate-400">
-                  <span>Waste ({type === 'ply-wood-pallet' ? 7 : 10}%):</span>
+                  <span>Waste ({rates.wastePctPly ?? (type === 'ply-wood-pallet' ? 7 : 10)}%):</span>
                   <span className="font-mono">+{Number(result.vestSFT || 0).toFixed(2)} SFT</span>
                 </div>
                 <div className="flex justify-between font-bold text-blue-400 pt-1 border-t border-slate-700/20">
