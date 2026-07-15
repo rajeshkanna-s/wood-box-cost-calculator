@@ -174,7 +174,7 @@ export default function CostSummary({
         <div className="total-card animate-glow">
           <div className="relative flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-300 mb-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: 'var(--text-muted)' }}>
                 Final Total Price (Inc. Profit)
               </p>
               <p className="text-3xl sm:text-4xl font-extrabold tracking-tight text-gradient">
