@@ -529,6 +529,14 @@ export function useBoxCalculator() {
     }
   }, [activeTab, pineWoodBoxResult, plyWoodPalletResult, pineWoodPalletResult, pinePlywoodBoxResult]);
 
+  const loadSavedState = (savedDims, savedRates, savedParts) => {
+    activeSetter({
+      dims: savedDims,
+      rates: savedRates,
+      parts: savedParts
+    });
+  };
+
   return {
     activeTab,
     setActiveTab,
@@ -545,6 +553,7 @@ export function useBoxCalculator() {
     removePart,
     togglePartExclusion,
     resetParts,
+    loadSavedState,
     // Expose all individual states and results for preview sheets
     pineWoodBox: { dims: pineWoodBoxState.dims, rates: pineWoodBoxState.rates, result: pineWoodBoxResult },
     plyWoodPallet: { dims: plyWoodPalletState.dims, rates: plyWoodPalletState.rates, result: plyWoodPalletResult },

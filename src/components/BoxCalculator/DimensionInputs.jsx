@@ -81,7 +81,7 @@ export default function DimensionInputs({
                 <span className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>
                   Select Preset Size:
                 </span>
-                <div className="flex-1 max-w-[60%]">
+                <div className="flex-1 min-w-0">
                   {customPresetSelector ? (
                     customPresetSelector
                   ) : (

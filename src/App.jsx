@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useBoxCalculator } from './hooks/useBoxCalculator';
 import DimensionInputs from './components/BoxCalculator/DimensionInputs';
 import RateInputs from './components/BoxCalculator/RateInputs';
@@ -11,6 +11,8 @@ import PresetSelector from './components/BoxPresets/PresetSelector';
 import ClientPresetsCalculator from './components/BoxCalculator/ClientPresetsCalculator';
 import QuotePreviewModal from './components/BoxCalculator/QuotePreviewModal';
 import { CLIENT_PRESETS } from './engine/clientPresets';
+import { supabase } from './engine/supabaseClient';
+import { PRODUCT_PRESETS } from './engine/boxTypes';
 
 const DEFAULT_CLIENT_QUOTE_OPTIONS = {
   showParts: false,
@@ -36,7 +38,8 @@ export default function App() {
     addCustomPart,
     removePart,
     togglePartExclusion,
-    resetParts
+    resetParts,
+    loadSavedState
   } = useBoxCalculator();
 
   const [isDark, setIsDark] = useState(false);
@@ -45,12 +48,245 @@ export default function App() {
   const [clientQuoteOptions, setClientQuoteOptions] = useState(DEFAULT_CLIENT_QUOTE_OPTIONS);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewMode, setPreviewMode] = useState('detailed');
-  const [selectedCompanyId, setSelectedCompanyId] = useState(CLIENT_PRESETS[0]?.id || 'other');
-  const [customClientName, setCustomClientName] = useState('');
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
 
-  const finalClientName = selectedCompanyId === 'other'
-    ? customClientName
-    : (CLIENT_PRESETS.find(c => c.id === selectedCompanyId)?.companyName || '');
+  const [companies, setCompanies] = useState([]);
+  const [customPresets, setCustomPresets] = useState([]);
+  const [saveStatus, setSaveStatus] = useState('synced'); // 'synced', 'saving', 'loading', 'local'
+  const [activePresetId, setActivePresetId] = useState('');
+
+  const finalClientName = companies.find(c => c.id === selectedCompanyId)?.name || '';
+
+  // Load companies (clients) on mount
+  useEffect(() => {
+    async function loadCompanies() {
+      try {
+        const { data, error } = await supabase
+          .from('companies')
+          .select('*')
+          .order('name', { ascending: true });
+        
+        if (error) throw error;
+        if (data && data.length > 0) {
+          setCompanies(data);
+          // Auto-select Motherson 3 or first client
+          const initialCompany = data.find(c => c.name.includes('Motherson')) || data[0];
+          setSelectedCompanyId(initialCompany.id);
+        } else {
+          const fallback = CLIENT_PRESETS.map((c) => ({ id: c.id, name: c.companyName }));
+          setCompanies(fallback);
+          setSelectedCompanyId(fallback[0]?.id || '');
+        }
+      } catch (err) {
+        console.error('Error fetching companies:', err);
+        const fallback = CLIENT_PRESETS.map((c) => ({ id: c.id, name: c.companyName }));
+        setCompanies(fallback);
+        setSelectedCompanyId(fallback[0]?.id || '');
+        setSaveStatus('local');
+      }
+    }
+    loadCompanies();
+  }, []);
+
+  // Load custom preset sizes from DB when activeTab changes
+  useEffect(() => {
+    async function loadCustomPresets() {
+      try {
+        const { data, error } = await supabase
+          .from('preset_sizes')
+          .select('*')
+          .eq('product_type', activeTab)
+          .order('created_at', { ascending: true });
+        
+        if (error) throw error;
+        setCustomPresets(data || []);
+        
+        if (data && data.length > 0) {
+          setActivePresetId(data[0].id);
+        } else {
+          setActivePresetId('');
+        }
+      } catch (err) {
+        console.error('Error fetching custom presets:', err);
+        setCustomPresets([]);
+        setActivePresetId('');
+      }
+    }
+    loadCustomPresets();
+  }, [activeTab]);
+
+  // Preset sizes loaded from DB
+  const mergedPresets = useMemo(() => {
+    return customPresets;
+  }, [customPresets]);
+
+  // Selected preset object
+  const selectedPreset = useMemo(() => {
+    return mergedPresets.find(p => p.id === activePresetId);
+  }, [activePresetId, mergedPresets]);
+
+  // Load calculations when selected company or selected preset size changes
+  useEffect(() => {
+    if (!selectedCompanyId || !activePresetId || !selectedPreset) {
+      return;
+    }
+
+    async function loadSavedCalculation() {
+      try {
+        setSaveStatus('loading');
+        const { data, error } = await supabase
+          .from('calculations')
+          .select('*')
+          .eq('company_id', selectedCompanyId)
+          .eq('preset_size_id', activePresetId)
+          .eq('product_type', activeTab)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          const targetUnit = selectedPreset.unit || 'in';
+          const savedDims = {
+            unit: targetUnit,
+            l: selectedPreset.l,
+            w: selectedPreset.w,
+            h: selectedPreset.h,
+            th: selectedPreset.th || undefined
+          };
+          loadSavedState(savedDims, data.rates, data.parts);
+          setSaveStatus('synced');
+        } else {
+          // No saved calculation, load defaults for this preset
+          loadPreset(selectedPreset);
+          setSaveStatus('synced');
+        }
+      } catch (err) {
+        console.error('Error loading calculation:', err);
+        setSaveStatus('local');
+      }
+    }
+
+    loadSavedCalculation();
+  }, [selectedCompanyId, activePresetId, activeTab]);
+
+  // Auto-save logic
+  useEffect(() => {
+    if (!selectedCompanyId || !activePresetId || !selectedPreset || saveStatus === 'loading') {
+      return;
+    }
+
+    setSaveStatus('saving');
+
+    const timer = setTimeout(async () => {
+      try {
+        const { error } = await supabase
+          .from('calculations')
+          .upsert({
+            company_id: selectedCompanyId,
+            preset_size_id: activePresetId,
+            product_type: activeTab,
+            rates: rates,
+            parts: parts
+          }, { onConflict: 'company_id, preset_size_id, product_type' });
+
+        if (error) throw error;
+        setSaveStatus('synced');
+      } catch (err) {
+        console.error('Error auto-saving calculation:', err);
+        setSaveStatus('local');
+      }
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [rates, parts, selectedCompanyId, activePresetId]);
+
+  const addNewClient = async () => {
+    const name = window.prompt("Enter new client/company name:");
+    if (!name || !name.trim()) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .insert({ name: name.trim() })
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCompanies(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+        setSelectedCompanyId(data.id);
+      }
+    } catch (err) {
+      console.error('Error adding new company:', err);
+      alert('Failed to add client: ' + err.message);
+    }
+  };
+
+  const saveCurrentSizeAsPreset = async () => {
+    const defaultLabel = `${dims.l} × ${dims.w} × ${dims.h} ${dims.unit}`;
+    const label = window.prompt("Enter a label for this preset size:", defaultLabel);
+    if (!label) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('preset_sizes')
+        .insert({
+          label: label.trim(),
+          l: dims.l,
+          w: dims.w,
+          h: dims.h,
+          unit: dims.unit,
+          th: dims.th || null,
+          product_type: activeTab
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      if (data) {
+        setCustomPresets(prev => [...prev, data]);
+        setActivePresetId(data.id);
+        loadPreset(data);
+      }
+    } catch (err) {
+      console.error('Error saving custom preset size:', err);
+      alert('Failed to save preset size: ' + err.message);
+    }
+  };
+
+  const renderSaveStatus = () => {
+    switch (saveStatus) {
+      case 'synced':
+        return (
+          <div className="flex items-center gap-1.5 text-xs text-emerald-500 font-semibold px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20" title="All edits successfully saved to Supabase DB.">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            Cloud Synced
+          </div>
+        );
+      case 'saving':
+        return (
+          <div className="flex items-center gap-1.5 text-xs text-amber-500 font-semibold px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping" />
+            Saving...
+          </div>
+        );
+      case 'loading':
+        return (
+          <div className="flex items-center gap-1.5 text-xs text-blue-500 font-semibold px-2.5 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+            Loading DB Config...
+          </div>
+        );
+      case 'local':
+      default:
+        return (
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold px-2.5 py-1.5 rounded-lg bg-slate-500/10 border border-slate-500/20" title="Changes are kept locally in browser memory. Connect to internet to sync.">
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+            Local Cache Only
+          </div>
+        );
+    }
+  };
 
   useEffect(() => {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -188,7 +424,8 @@ export default function App() {
     <div className="app-root min-h-screen hero-gradient py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="screen-calculator max-w-5xl mx-auto">
         <header className="mb-10 animate-fade-in relative">
-          <div className="absolute top-0 right-0">
+          <div className="absolute top-0 right-0 flex items-center gap-3">
+            {renderSaveStatus()}
             <button
               onClick={() => setIsDark(!isDark)}
               className="inline-flex items-center gap-2 p-2 rounded-lg border border-transparent hover:border-gray-300/30 transition-all duration-200"
@@ -270,59 +507,39 @@ export default function App() {
                     Client / Company Name:
                   </label>
                 </div>
-                <select
-                  id="company-select"
-                  value={selectedCompanyId}
-                  onChange={(e) => setSelectedCompanyId(e.target.value)}
-                  className="premium-select w-full"
-                  style={{ 
-                    maxWidth: '650px', 
-                    background: 'var(--card-inner-bg)', 
-                    color: 'var(--text-main)', 
-                    border: '1px solid var(--card-border)', 
-                    borderRadius: '8px', 
-                    padding: '10px 14px',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    textAlign: 'left',
-                    outline: 'none',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
-                  }}
-                >
-                  {CLIENT_PRESETS.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.companyName}
-                    </option>
-                  ))}
-                  <option value="other">Other (Custom Client)</option>
-                </select>
-              </div>
-
-              {selectedCompanyId === 'other' && (
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 w-full max-w-4xl animate-fade-in border-t pt-4" style={{ borderColor: 'var(--card-border)' }}>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <label htmlFor="global-client-name" className="text-sm font-semibold whitespace-nowrap" style={{ color: 'var(--text-main)' }}>
-                      Enter Custom Client Name:
-                    </label>
-                  </div>
-                  <input
-                    id="global-client-name"
-                    type="text"
-                    value={customClientName}
-                    onChange={(e) => setCustomClientName(e.target.value)}
-                    placeholder="e.g. NTN, Motherson, etc."
-                    className="premium-input w-full"
+                <div className="flex gap-2 w-full" style={{ maxWidth: '650px' }}>
+                  <select
+                    id="company-select"
+                    value={selectedCompanyId}
+                    onChange={(e) => setSelectedCompanyId(e.target.value)}
+                    className="premium-select flex-1 text-sm font-medium"
                     style={{ 
-                      maxWidth: '650px',
+                      background: 'var(--card-inner-bg)', 
+                      color: 'var(--text-main)', 
+                      border: '1px solid var(--card-border)', 
+                      borderRadius: '8px', 
                       padding: '10px 14px',
-                      fontSize: '14px',
                       outline: 'none',
-                      textAlign: 'left'
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                     }}
-                  />
+                  >
+                    {companies.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={addNewClient}
+                    className="btn-secondary px-3 py-1.5 text-xs font-bold uppercase tracking-wider shrink-0"
+                    style={{ display: 'flex', alignItems: 'center' }}
+                  >
+                    + Add Client
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           </div>
 
@@ -337,6 +554,37 @@ export default function App() {
                 onSelectPreset={loadPreset}
                 isPlywood={activeTab === 'ply-wood-pallet' || activeTab === 'pine-plywood-box'}
                 type={activeTab}
+                customPresetSelector={
+                  <div className="flex gap-2 w-full">
+                    <select
+                      id="preset-select"
+                      value={activePresetId}
+                      onChange={(e) => {
+                        setActivePresetId(e.target.value);
+                        const selected = mergedPresets.find(p => p.id === e.target.value);
+                        if (selected) loadPreset(selected);
+                      }}
+                      className="premium-select flex-1 text-xs"
+                      style={{ padding: '0.4rem 0.75rem', fontSize: '0.8125rem', height: '32px' }}
+                    >
+                      <option value="" disabled>Choose a preset size...</option>
+                      {mergedPresets.map(preset => (
+                        <option key={preset.id} value={preset.id}>
+                          {preset.label}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={saveCurrentSizeAsPreset}
+                      className="btn-secondary px-3 py-1.5 text-[10px] uppercase font-bold tracking-wider shrink-0"
+                      style={{ height: '32px', display: 'flex', alignItems: 'center' }}
+                      title="Save current dimensions as a reusable preset"
+                    >
+                      + Add Size
+                    </button>
+                  </div>
+                }
               />
             </div>
             <div className="animate-slide-up" style={{ animationDelay: '0.15s', animationFillMode: 'both' }}>
