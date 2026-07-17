@@ -55,6 +55,23 @@ export default function App() {
   const [saveStatus, setSaveStatus] = useState('synced'); // 'synced', 'saving', 'loading', 'local'
   const [activePresetId, setActivePresetId] = useState('');
 
+  // Settings & configuration state variables
+  const [currentView, setCurrentView] = useState('calculator');
+  const [editingCompanyId, setEditingCompanyId] = useState(null);
+  const [editingCompanyName, setEditingCompanyName] = useState('');
+  const [newCompanyName, setNewCompanyName] = useState('');
+  const [settingsPresetTab, setSettingsPresetTab] = useState('pine-wood-box');
+  const [settingsPresets, setSettingsPresets] = useState([]);
+  const [newPresetLabel, setNewPresetLabel] = useState('');
+  const [newPresetL, setNewPresetL] = useState('');
+  const [newPresetW, setNewPresetW] = useState('');
+  const [newPresetH, setNewPresetH] = useState('');
+  const [newPresetTh, setNewPresetTh] = useState('');
+  const [newPresetUnit, setNewPresetUnit] = useState('mm');
+  const [editingPresetId, setEditingPresetId] = useState(null);
+  const [editingPreset, setEditingPreset] = useState(null);
+  const [confirmDeleteModal, setConfirmDeleteModal] = useState(null);
+
   const finalClientName = companies.find(c => c.id === selectedCompanyId)?.name || '';
 
   // Load companies (clients) on mount
@@ -219,6 +236,166 @@ export default function App() {
     } catch (err) {
       console.error('Error adding new company:', err);
       alert('Failed to add client: ' + err.message);
+    }
+  };
+
+  const updateClientName = async (id, newName) => {
+    if (!newName || !newName.trim()) return;
+    try {
+      const { data, error } = await supabase
+        .from('companies')
+        .update({ name: newName.trim() })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      if (data) {
+        setCompanies(prev => prev.map(c => c.id === id ? data : c).sort((a, b) => a.name.localeCompare(b.name)));
+        setEditingCompanyId(null);
+      }
+    } catch (err) {
+      console.error('Error updating company name:', err);
+      alert('Failed to update client name: ' + err.message);
+    }
+  };
+
+  const deleteClient = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('companies')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      setCompanies(prev => prev.filter(c => c.id !== id));
+      if (selectedCompanyId === id) {
+        setSelectedCompanyId(companies.find(c => c.id !== id)?.id || '');
+      }
+    } catch (err) {
+      console.error('Error deleting company:', err);
+      alert('Failed to delete client. It may have dependent calculations.');
+    }
+  };
+
+  const loadSettingsPresets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('preset_sizes')
+        .select('*')
+        .eq('product_type', settingsPresetTab)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      setSettingsPresets(data || []);
+      
+      // Sync back to customPresets if this is the active tab
+      if (settingsPresetTab === activeTab) {
+        setCustomPresets(data || []);
+      }
+    } catch (err) {
+      console.error('Error loading settings presets:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (currentView === 'settings') {
+      loadSettingsPresets();
+    }
+  }, [settingsPresetTab, currentView]);
+
+  const loadCustomPresets = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('preset_sizes')
+        .select('*')
+        .eq('product_type', activeTab)
+        .order('created_at', { ascending: true });
+      
+      if (error) throw error;
+      setCustomPresets(data || []);
+    } catch (err) {
+      console.error('Error fetching custom presets:', err);
+    }
+  };
+
+  useEffect(() => {
+    if (currentView === 'calculator') {
+      loadCustomPresets();
+    }
+  }, [currentView]);
+
+  const addPresetSizeSettings = async (presetData) => {
+    if (!presetData.label || !presetData.label.trim()) {
+      alert('Label is required');
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('preset_sizes')
+        .insert({
+          label: presetData.label.trim(),
+          l: Number(presetData.l) || 0,
+          w: Number(presetData.w) || 0,
+          h: Number(presetData.h) || 0,
+          th: presetData.th ? Number(presetData.th) : null,
+          unit: presetData.unit || 'mm',
+          product_type: presetData.product_type
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      if (data) {
+        setNewPresetLabel('');
+        setNewPresetL('');
+        setNewPresetW('');
+        setNewPresetH('');
+        setNewPresetTh('');
+        await loadSettingsPresets();
+      }
+    } catch (err) {
+      console.error('Error adding preset size:', err);
+      alert('Failed to add preset size: ' + err.message);
+    }
+  };
+
+  const updatePresetSize = async (id, updatedData) => {
+    try {
+      const { data, error } = await supabase
+        .from('preset_sizes')
+        .update({
+          label: updatedData.label.trim(),
+          l: Number(updatedData.l) || 0,
+          w: Number(updatedData.w) || 0,
+          h: Number(updatedData.h) || 0,
+          th: updatedData.th ? Number(updatedData.th) : null,
+          unit: updatedData.unit || 'mm'
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      if (data) {
+        await loadSettingsPresets();
+        setEditingPresetId(null);
+      }
+    } catch (err) {
+      console.error('Error updating preset size:', err);
+      alert('Failed to update preset size: ' + err.message);
+    }
+  };
+
+  const deletePresetSize = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('preset_sizes')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      await loadSettingsPresets();
+      if (activePresetId === id) {
+        setActivePresetId('');
+      }
+    } catch (err) {
+      console.error('Error deleting preset size:', err);
+      alert('Failed to delete preset size: ' + err.message);
     }
   };
 
@@ -420,14 +597,481 @@ export default function App() {
     setClientQuoteOptions((current) => ({ ...current, [key]: value }));
   };
 
+  const renderConfirmDeleteModal = () => {
+    if (!confirmDeleteModal) return null;
+    const isCompany = confirmDeleteModal.type === 'company';
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fade-in no-print">
+        <div 
+          className="glass-card max-w-sm w-full p-6 space-y-6 shadow-2xl border animate-slide-up"
+          style={{ borderColor: 'rgba(239, 68, 68, 0.4)', background: 'var(--card-bg)' }}
+        >
+          <div className="flex items-center gap-3 text-red-500">
+            <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-bold">Confirm Deletion</h3>
+          </div>
+          
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--text-main)' }}>
+            Are you sure you want to delete the {isCompany ? 'client' : 'preset size'} <strong className="text-red-400">"{confirmDeleteModal.name}"</strong>? 
+            {isCompany && " All calculations saved under this client will also be permanently deleted."} This action cannot be undone.
+          </p>
+          
+          <div className="flex gap-3 justify-end">
+            <button
+              type="button"
+              onClick={() => setConfirmDeleteModal(null)}
+              className="btn-secondary text-xs px-4 py-2"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const { id } = confirmDeleteModal;
+                if (isCompany) {
+                  await deleteClient(id);
+                } else {
+                  await deletePresetSize(id);
+                }
+                setConfirmDeleteModal(null);
+              }}
+              className="btn-primary bg-red-600 hover:bg-red-700 text-white border-none shadow-red-500/20 text-xs px-4 py-2"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSettingsView = () => {
+    return (
+      <div className="space-y-6 no-print">
+        {/* Header bar */}
+        <div className="flex items-center justify-between p-4 glass-card">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setCurrentView('calculator')}
+              className="btn-secondary px-3 py-1.5 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider"
+              style={{ height: '36px' }}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              Back to Calculator
+            </button>
+            <h2 className="text-xl font-bold tracking-tight text-gradient" style={{ margin: 0 }}>
+              Settings & Configuration
+            </h2>
+          </div>
+          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 bg-slate-500/10 px-2 py-1 rounded-md border border-slate-500/20">
+            Database Settings
+          </span>
+        </div>
+
+        {/* Split grid for Client List and Presets */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-slide-up">
+          
+          {/* CLIENT LIST SECTION */}
+          <div className="glass-card p-5 flex flex-col space-y-4">
+            <div className="border-b pb-3" style={{ borderColor: 'var(--card-border)' }}>
+              <h3 className="text-base font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-main)' }}>
+                Client / Company List
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-1">Manage active billing clients. Renaming or deleting will sync in real-time.</p>
+            </div>
+
+            {/* Add client form */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newCompanyName}
+                onChange={(e) => setNewCompanyName(e.target.value)}
+                placeholder="Enter client name..."
+                className="premium-input flex-1 text-sm text-left"
+                style={{ textAlign: 'left', height: '36px' }}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (!newCompanyName || !newCompanyName.trim()) return;
+                  try {
+                    const { data, error } = await supabase
+                      .from('companies')
+                      .insert({ name: newCompanyName.trim() })
+                      .select()
+                      .single();
+
+                    if (error) throw error;
+                    if (data) {
+                      setCompanies(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)));
+                      setNewCompanyName('');
+                    }
+                  } catch (err) {
+                    console.error('Error adding client:', err);
+                    alert('Failed to add client: ' + err.message);
+                  }
+                }}
+                className="btn-primary py-2 px-4 shrink-0 text-xs font-bold uppercase tracking-wider"
+                style={{ height: '36px' }}
+              >
+                + Add Client
+              </button>
+            </div>
+
+            {/* List of clients */}
+            <div className="overflow-y-auto pr-1" style={{ maxHeight: '400px' }}>
+              <div className="space-y-2">
+                {companies.map((c) => {
+                  const isEditing = editingCompanyId === c.id;
+                  return (
+                    <div
+                      key={c.id}
+                      className="flex items-center justify-between p-3 rounded-xl border transition-all"
+                      style={{ 
+                        background: 'var(--card-inner-bg)', 
+                        borderColor: isEditing ? 'var(--accent-blue)' : 'var(--card-border)' 
+                      }}
+                    >
+                      {isEditing ? (
+                        <div className="flex items-center gap-2 w-full">
+                          <input
+                            type="text"
+                            value={editingCompanyName}
+                            onChange={(e) => setEditingCompanyName(e.target.value)}
+                            className="premium-input flex-1 text-sm text-left py-1"
+                            style={{ textAlign: 'left', height: '32px' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateClientName(c.id, editingCompanyName)}
+                            className="btn-primary text-xs py-1 px-3"
+                            style={{ height: '32px' }}
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEditingCompanyId(null)}
+                            className="btn-secondary text-xs py-1 px-3"
+                            style={{ height: '32px' }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-sm font-semibold" style={{ color: 'var(--text-main)' }}>
+                            {c.name}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingCompanyId(c.id);
+                                setEditingCompanyName(c.name);
+                              }}
+                              className="text-slate-400 hover:text-blue-500 p-1.5 rounded transition-colors"
+                              title="Edit Client Name"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteModal({ type: 'company', id: c.id, name: c.name })}
+                              className="text-slate-400 hover:text-red-500 p-1.5 rounded transition-colors"
+                              title="Delete Client"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+                {companies.length === 0 && (
+                  <p className="text-center text-slate-500 text-xs py-8">No clients loaded. Add one above.</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* PRESETS LIST SECTION */}
+          <div className="glass-card p-5 flex flex-col space-y-4">
+            <div className="border-b pb-3" style={{ borderColor: 'var(--card-border)' }}>
+              <h3 className="text-base font-extrabold uppercase tracking-wider" style={{ color: 'var(--text-main)' }}>
+                Preset Sizes Registry
+              </h3>
+              <p className="text-[11px] text-slate-400 mt-1">Manage reusable dimension profiles. Grouped by product calculator tab.</p>
+            </div>
+
+            {/* Tab selector within Settings */}
+            <div className="flex justify-center border-b pb-2" style={{ borderColor: 'var(--table-border)' }}>
+              <div className="flex flex-wrap gap-1.5 justify-center bg-slate-500/5 p-1 rounded-xl w-full">
+                {[
+                  { id: 'pine-wood-box', label: 'PINE BOX' },
+                  { id: 'ply-wood-pallet', label: 'PLY PALLET' },
+                  { id: 'pine-wood-pallet', label: 'PINE PALLET' },
+                  { id: 'pine-plywood-box', label: 'PINE PLY BOX' }
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSettingsPresetTab(t.id)}
+                    className={`px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase tracking-wider transition-colors ${settingsPresetTab === t.id ? 'bg-primary text-white shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Add preset form */}
+            <div className="bg-slate-500/5 p-3 rounded-xl space-y-3">
+              <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Add New Size Preset</span>
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  placeholder="Label (e.g. 1200x800)"
+                  value={newPresetLabel}
+                  onChange={e => setNewPresetLabel(e.target.value)}
+                  className="premium-input text-xs text-left"
+                  style={{ textAlign: 'left', padding: '4px 8px' }}
+                />
+                <input
+                  type="number"
+                  placeholder="Length"
+                  value={newPresetL}
+                  onChange={e => setNewPresetL(e.target.value)}
+                  className="premium-input text-xs text-center"
+                  style={{ padding: '4px 8px' }}
+                />
+                <input
+                  type="number"
+                  placeholder="Width"
+                  value={newPresetW}
+                  onChange={e => setNewPresetW(e.target.value)}
+                  className="premium-input text-xs text-center"
+                  style={{ padding: '4px 8px' }}
+                />
+                <input
+                  type="number"
+                  placeholder="Height"
+                  value={newPresetH}
+                  onChange={e => setNewPresetH(e.target.value)}
+                  className="premium-input text-xs text-center"
+                  style={{ padding: '4px 8px' }}
+                />
+                <input
+                  type="number"
+                  placeholder="Thickness (Opt)"
+                  value={newPresetTh}
+                  onChange={e => setNewPresetTh(e.target.value)}
+                  className="premium-input text-xs text-center"
+                  style={{ padding: '4px 8px' }}
+                />
+                <select
+                  value={newPresetUnit}
+                  onChange={e => setNewPresetUnit(e.target.value)}
+                  className="premium-select text-xs"
+                  style={{ padding: '4px 8px', height: '30px' }}
+                >
+                  <option value="in">inch (in)</option>
+                  <option value="mm">mm</option>
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  addPresetSizeSettings({
+                    label: newPresetLabel,
+                    l: newPresetL,
+                    w: newPresetW,
+                    h: newPresetH,
+                    th: newPresetTh,
+                    unit: newPresetUnit,
+                    product_type: settingsPresetTab
+                  });
+                }}
+                className="btn-primary w-full text-xs font-bold uppercase tracking-wider py-1.5"
+              >
+                + Add Preset Size
+              </button>
+            </div>
+
+            {/* List of presets */}
+            <div className="overflow-y-auto pr-1 flex-1" style={{ maxHeight: '300px' }}>
+              <div className="space-y-2">
+                {settingsPresets.map((p) => {
+                  const isEditing = editingPresetId === p.id;
+                  return (
+                    <div
+                      key={p.id}
+                      className="p-3 rounded-xl border transition-all"
+                      style={{ 
+                        background: 'var(--card-inner-bg)', 
+                        borderColor: isEditing ? 'var(--accent-blue)' : 'var(--card-border)' 
+                      }}
+                    >
+                      {isEditing ? (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              value={editingPreset.label}
+                              onChange={e => setEditingPreset(prev => ({ ...prev, label: e.target.value }))}
+                              placeholder="Label"
+                              className="premium-input text-xs text-left"
+                              style={{ textAlign: 'left' }}
+                            />
+                            <select
+                              value={editingPreset.unit}
+                              onChange={e => setEditingPreset(prev => ({ ...prev, unit: e.target.value }))}
+                              className="premium-select text-xs"
+                              style={{ height: '30px' }}
+                            >
+                              <option value="in">in</option>
+                              <option value="mm">mm</option>
+                            </select>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            <input
+                              type="number"
+                              value={editingPreset.l}
+                              onChange={e => setEditingPreset(prev => ({ ...prev, l: e.target.value }))}
+                              placeholder="L"
+                              className="premium-input text-xs text-center"
+                            />
+                            <input
+                              type="number"
+                              value={editingPreset.w}
+                              onChange={e => setEditingPreset(prev => ({ ...prev, w: e.target.value }))}
+                              placeholder="W"
+                              className="premium-input text-xs text-center"
+                            />
+                            <input
+                              type="number"
+                              value={editingPreset.h}
+                              onChange={e => setEditingPreset(prev => ({ ...prev, h: e.target.value }))}
+                              placeholder="H"
+                              className="premium-input text-xs text-center"
+                            />
+                            <input
+                              type="number"
+                              value={editingPreset.th || ''}
+                              onChange={e => setEditingPreset(prev => ({ ...prev, th: e.target.value }))}
+                              placeholder="Th"
+                              className="premium-input text-xs text-center"
+                            />
+                          </div>
+                          <div className="flex gap-2 justify-end pt-1">
+                            <button
+                              type="button"
+                              onClick={() => updatePresetSize(p.id, editingPreset)}
+                              className="btn-primary text-xs py-1 px-3"
+                              style={{ height: '30px' }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingPresetId(null)}
+                              className="btn-secondary text-xs py-1 px-3"
+                              style={{ height: '30px' }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-sm font-bold block" style={{ color: 'var(--text-main)' }}>
+                              {p.label}
+                            </span>
+                            <span className="text-[10px] text-slate-500 font-mono">
+                              L: {p.l} x W: {p.w} x H: {p.h} {p.th ? `x Th: ${p.th}` : ''} ({p.unit})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingPresetId(p.id);
+                                setEditingPreset({ ...p });
+                              }}
+                              className="text-slate-400 hover:text-blue-500 p-1.5 rounded transition-colors"
+                              title="Edit Preset"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                              </svg>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteModal({ type: 'preset', id: p.id, name: p.label })}
+                              className="text-slate-400 hover:text-red-500 p-1.5 rounded transition-colors"
+                              title="Delete Preset"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {settingsPresets.length === 0 && (
+                  <p className="text-center text-slate-500 text-xs py-8">No custom preset sizes found for this product. Add one above.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="app-root min-h-screen hero-gradient py-10 px-4 sm:px-6 lg:px-8 transition-colors duration-300">
       <div className="screen-calculator max-w-5xl mx-auto">
-        <header className="mb-10 animate-fade-in relative">
-          <div className="absolute top-0 right-0 flex items-center gap-3">
+        {currentView === 'settings' ? (
+          <>
+            {renderSettingsView()}
+            {renderConfirmDeleteModal()}
+          </>
+        ) : (
+          <>
+            <header className="mb-10 animate-fade-in relative">
+          <div className="absolute top-0 right-0 flex items-center gap-2.5">
+            {currentView === 'calculator' && (
+              <button
+                onClick={() => setCurrentView('settings')}
+                className="inline-flex items-center gap-1.5 p-2 rounded-lg border border-transparent hover:border-gray-300/30 transition-all duration-200 text-xs font-bold uppercase tracking-wider"
+                style={{ background: 'var(--card-inner-bg)', color: 'var(--text-main)' }}
+                title="Settings & Configurations"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="hidden sm:inline">Settings</span>
+              </button>
+            )}
             <button
               onClick={() => setIsDark(!isDark)}
-              className="inline-flex items-center gap-2 p-2 rounded-lg border border-transparent hover:border-gray-300/30 transition-all duration-200"
+              className="inline-flex items-center gap-1.5 p-2 rounded-lg border border-transparent hover:border-gray-300/30 transition-all duration-200 text-xs font-bold uppercase tracking-wider"
               style={{ background: 'var(--card-inner-bg)', color: 'var(--text-main)' }}
               title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             >
@@ -440,7 +1084,7 @@ export default function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                 </svg>
               )}
-              <span>{isDark ? 'Light' : 'Dark'}</span>
+              <span className="hidden sm:inline">{isDark ? 'Light' : 'Dark'}</span>
             </button>
           </div>
 
@@ -631,6 +1275,8 @@ export default function App() {
             © 2026 Elshaddai Wood Packing. All Rights Reserved.
           </p>
         </footer>
+          </>
+        )}
       </div>
 
       <ClientQuoteOptions
