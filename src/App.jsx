@@ -425,7 +425,6 @@ export default function App() {
       <div className="screen-calculator max-w-5xl mx-auto">
         <header className="mb-10 animate-fade-in relative">
           <div className="absolute top-0 right-0 flex items-center gap-3">
-            {renderSaveStatus()}
             <button
               onClick={() => setIsDark(!isDark)}
               className="inline-flex items-center gap-2 p-2 rounded-lg border border-transparent hover:border-gray-300/30 transition-all duration-200"
