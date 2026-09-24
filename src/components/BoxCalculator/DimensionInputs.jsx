@@ -29,13 +29,14 @@ export default function DimensionInputs({
   };
   const reper = reperInfo[reperType];
 
-  const boxSurfaceAreaSqFt = currentUnit === 'sft' ? dims.l : ((2 * (lInches * wInches + wInches * hInches + lInches * hInches)) / 144);
+  const hasDims = Boolean(Number(dims.l) > 0 && Number(dims.w) > 0);
+  const boxSurfaceAreaSqFt = currentUnit === 'sft' ? (Number(dims.l) || 0) : (hasDims && Number(dims.h) > 0 ? ((2 * (lInches * wInches + wInches * hInches + lInches * hInches)) / 144) : 0);
 
   // Convert for conversion panel display
   const showUnit = currentUnit === 'mm' ? 'in' : 'mm';
-  const l_converted = currentUnit === 'sft' ? 0 : (currentUnit === 'mm' ? convertFromInches(lInches, 'in') : convertFromInches(lInches, 'mm'));
-  const w_converted = currentUnit === 'sft' ? 0 : (currentUnit === 'mm' ? convertFromInches(wInches, 'in') : convertFromInches(wInches, 'mm'));
-  const h_converted = currentUnit === 'sft' ? 0 : (currentUnit === 'mm' ? convertFromInches(hInches, 'in') : convertFromInches(hInches, 'mm'));
+  const l_converted = hasDims ? (currentUnit === 'mm' ? convertFromInches(lInches, 'in') : convertFromInches(lInches, 'mm')) : 0;
+  const w_converted = hasDims ? (currentUnit === 'mm' ? convertFromInches(wInches, 'in') : convertFromInches(wInches, 'mm')) : 0;
+  const h_converted = hasDims && Number(dims.h) > 0 ? (currentUnit === 'mm' ? convertFromInches(hInches, 'in') : convertFromInches(hInches, 'mm')) : 0;
 
   const isReperType = type === 'pine-wood-box';
 
@@ -65,7 +66,7 @@ export default function DimensionInputs({
           <option value="sft">Square Feet (sft)</option>
         </select>
         </div>
-        {isReperType && (
+        {isReperType && hasDims && reper && (
           <span className="badge badge-wood">
             {reper.label}
           </span>

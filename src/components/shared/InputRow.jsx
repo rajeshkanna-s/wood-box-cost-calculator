@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function InputRow({ label, value, onChange, type = "number", unit, min, max, step, disabled = false, onDelete }) {
+export default function InputRow({ label, value, onChange, type = "number", unit, min, max, step, disabled = false, onDelete, placeholder = "0" }) {
   return (
     <div className="flex items-center justify-between py-2.5 group">
       <div className="flex items-center gap-2">
@@ -35,7 +35,8 @@ export default function InputRow({ label, value, onChange, type = "number", unit
         <input
           type={type}
           value={value === null || value === undefined ? '' : value}
-          onChange={(e) => onChange(e.target.value === '' ? null : e.target.value)}
+          onChange={(e) => onChange(e.target.value === '' ? '' : e.target.value)}
+          placeholder={placeholder}
           min={min}
           max={max}
           step={step}

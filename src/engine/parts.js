@@ -1,4 +1,4 @@
-import { inchToMm } from './cft';
+import { inchToMm, convertToInches } from './cft';
 
 export function getReperType(lengthInch) {
   if (lengthInch >= 100) return 26;
@@ -228,3 +228,97 @@ export const buildPlyParts = (l, w, h) => [
   { id: 'ENS',  label: 'End Panel',         l: Math.round(inchToMm(w)),       w: Math.round(inchToMm(h) + 40),  h: 12, qty: 2, isPly: true },
 ];
 export const buildPresetBlockPalletParts = buildPineWoodPalletParts;
+ 
+export function getGeneratedParts(tab, l, w, h, unit = 'in', thicknessOverride) {
+  if (unit === 'cft') {
+    const isPlyTab = tab === 'ply-wood-pallet';
+    return [
+      {
+        id: 'CFT-INPUT',
+        label: isPlyTab ? 'Entered Custom Volume (SFT Equivalent)' : 'Entered Custom Volume (CFT)',
+        l: 0,
+        w: 0,
+        h: 0,
+        qty: 1,
+        isCustom: true,
+        isExcluded: false,
+        isPly: isPlyTab,
+        cft: isPlyTab ? 0 : Number(l) || 0,
+        sft: isPlyTab ? Number(l) || 0 : 0
+      }
+    ];
+  }
+
+  if (unit === 'sft') {
+    const isPlyTab = tab === 'ply-wood-pallet' || tab === 'pine-plywood-box';
+    const cftVal = isPlyTab ? 0 : ((Number(l) || 0) * ((Number(h) || 0) / 25.4) / 12);
+    const sftVal = isPlyTab ? Number(l) || 0 : 0;
+    return [
+      {
+        id: 'SFT-INPUT',
+        label: isPlyTab ? 'Entered Custom Area (SFT)' : `Entered Custom Area (SFT) × Thickness (${h}mm)`,
+        l: 0,
+        w: 0,
+        h: 0,
+        qty: 1,
+        isCustom: true,
+        isExcluded: false,
+        isPly: isPlyTab,
+        cft: cftVal,
+        sft: sftVal
+      }
+    ];
+  }
+
+  const lIn = convertToInches(Number(l) || 0, unit);
+  const wIn = convertToInches(Number(w) || 0, unit);
+  const hIn = convertToInches(Number(h) || 0, unit);
+
+  const Lmm = Math.round(lIn * 25.4);
+  const Wmm = Math.round(wIn * 25.4);
+  const Hmm = Math.round(hIn * 25.4);
+
+  if (tab === 'ply-wood-pallet') {
+    const key = `${Lmm}x${Wmm}x${Hmm}`;
+    if (key === '1140x1180x195') {
+      return [
+        { id: 'TOP',  label: 'Top Ply Deck (TOP)',   l: 1140, w: 1180, h: 12, qty: 1, isPly: true },
+        { id: 'LEG',  label: 'Leg Ply Planks (LEG)', l: 1140, w: 90,  h: 12, qty: 3, isPly: true },
+        { id: 'BL',   label: 'Chip Blocks (BL)',      l: 90,  w: 90,  h: 90,  qty: 9, isPly: false },
+      ];
+    }
+    if (key === '980x1140x135') {
+      return [
+        { id: 'TOP',  label: 'Top Ply Deck (TOP)',   l: 980,  w: 1140, h: 12, qty: 1, isPly: true },
+        { id: 'LEG',  label: 'Leg Ply Planks (LEG)', l: 1140, w: 90,  h: 12, qty: 3, isPly: true },
+        { id: 'BACK1', label: 'Back Ply Planks (BACK-1)', l: 980, w: 90,  h: 12, qty: 2, isPly: true },
+        { id: 'BACK2', label: 'Back Ply Planks (BACK-2)', l: 960, w: 90,  h: 12, qty: 3, isPly: true },
+        { id: 'BL1',  label: 'Chip Blocks (BL-1)',    l: 130, w: 90,  h: 90,  qty: 6, isPly: false },
+        { id: 'BL2',  label: 'Chip Blocks (BL-2)',    l: 90,  w: 90,  h: 90,  qty: 3, isPly: false },
+      ];
+    }
+    if (key === '1490x1100x135') {
+      return [
+        { id: 'TOP',  label: 'Top Ply Deck (TOP)',   l: 1490, w: 1100, h: 12, qty: 1, isPly: true },
+        { id: 'LEG',  label: 'Leg Ply Planks (LEG)', l: 1100, w: 90,  h: 12, qty: 4, isPly: true },
+        { id: 'BACK1', label: 'Back Ply Planks (BACK-1)', l: 1490, w: 90,  h: 12, qty: 2, isPly: true },
+        { id: 'BACK2', label: 'Back Ply Planks (BACK-2)', l: 920, w: 90,  h: 12, qty: 4, isPly: true },
+        { id: 'BL1',  label: 'Chip Blocks (BL-1)',    l: 130, w: 90,  h: 90,  qty: 8, isPly: false },
+        { id: 'BL2',  label: 'Chip Blocks (BL-2)',    l: 90,  w: 90,  h: 90,  qty: 3, isPly: false },
+      ];
+    }
+  }
+
+  switch (tab) {
+    case 'pine-wood-box':
+      return buildPineWoodBoxParts(lIn, wIn, hIn);
+    case 'ply-wood-pallet':
+      return buildPlywoodPalletParts(lIn, wIn, hIn);
+    case 'pine-wood-pallet':
+      return buildPineWoodPalletParts(lIn, wIn, hIn, thicknessOverride);
+    case 'pine-plywood-box':
+      return buildPinePlywoodBoxParts(lIn, wIn, hIn);
+    default:
+      return [];
+  }
+}

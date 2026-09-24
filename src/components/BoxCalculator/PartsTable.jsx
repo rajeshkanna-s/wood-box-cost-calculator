@@ -1,4 +1,4 @@
-export default function PartsTable({ parts, result, rates, dims, onUpdatePart, onAddPart, onRemovePart, onToggleExclusion, compact = false, type = 'pine-wood-box' }) {
+export default function PartsTable({ parts, result, rates, dims, onUpdatePart, onAddPart, onRemovePart, onToggleExclusion, compact = false, type = 'pine-wood-box', onOpenSettings }) {
   const formatCFT = (n) => Number(n || 0).toFixed(compact ? 3 : 4);
   const isCombined = type === 'ply-wood-pallet' || type === 'pine-plywood-box';
   const isPlywoodOnly = false; // We don't have a plywood-only tab (all tabs are wood-only or combined)
@@ -55,9 +55,25 @@ export default function PartsTable({ parts, result, rates, dims, onUpdatePart, o
               {getTitle()}
             </h2>
           </div>
-          <span className="text-xs font-mono" style={{ color: 'var(--text-light)', fontSize: compact ? '10px' : undefined }}>
-            {parts.length} components
-          </span>
+          <div className="flex items-center gap-2">
+            {onOpenSettings && (
+              <button
+                type="button"
+                onClick={() => onOpenSettings('specifications')}
+                className="btn-secondary px-2 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 rounded-md"
+                title="Manage all specifications in Settings & DB"
+              >
+                <svg className="w-3.5 h-3.5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                DB Specifications
+              </button>
+            )}
+            <span className="text-xs font-mono" style={{ color: 'var(--text-light)', fontSize: compact ? '10px' : undefined }}>
+              {parts.length} components
+            </span>
+          </div>
         </div>
       </div>
 
@@ -77,35 +93,44 @@ export default function PartsTable({ parts, result, rates, dims, onUpdatePart, o
               </tr>
             </thead>
             <tbody>
-              {(result?.partsWithCFT || parts).map((p, i) => (
+              {(!parts || parts.length === 0) ? (
+                <tr>
+                  <td colSpan="8" className="text-center py-10" style={{ color: 'var(--text-muted)' }}>
+                    <div className="flex flex-col items-center justify-center gap-2 py-4">
+                      <svg className="w-8 h-8 opacity-30 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                      </svg>
+                      <p className="font-semibold text-sm">No specifications loaded</p>
+                      <p className="text-xs max-w-sm opacity-80 mx-auto">
+                        Enter Length, Width & Height above or choose a preset size to calculate parts.
+                      </p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                (result?.partsWithCFT || parts).map((p, i) => (
                 <tr key={i} className={`group hover:bg-black/5 dark:hover:bg-white/5 transition-colors ${p.isExcluded ? 'opacity-40 grayscale' : ''}`}>
                   <td style={tdStyle(true, false)}>
-                    {p.isCustom ? (
-                      <input 
-                        type="text" 
-                        className={`table-input w-full ${compact ? 'text-xs py-0.5 px-1' : ''}`} 
-                        value={p.id} 
-                        onChange={(e) => onUpdatePart(i, 'id', e.target.value)}
-                        placeholder="ID"
-                        disabled={p.isExcluded}
-                      />
-                    ) : (
-                      <span className={p.isExcluded ? 'line-through' : ''}>{p.id}</span>
-                    )}
+                    <input 
+                      type="text" 
+                      className={`table-input w-full font-mono font-bold ${compact ? 'text-xs py-0.5 px-1' : ''} ${p.isExcluded ? 'line-through opacity-50' : ''}`} 
+                      value={p.id || ''} 
+                      onChange={(e) => onUpdatePart(i, 'id', e.target.value)}
+                      placeholder="ID"
+                      disabled={p.isExcluded}
+                      title="Edit part code"
+                    />
                   </td>
                   <td style={tdStyle(false, false)}>
-                    {p.isCustom ? (
-                      <input 
-                        type="text" 
-                        className={`table-input w-full ${compact ? 'text-xs py-0.5 px-1' : ''}`} 
-                        value={p.label} 
-                        onChange={(e) => onUpdatePart(i, 'label', e.target.value)}
-                        placeholder="Description"
-                        disabled={p.isExcluded}
-                      />
-                    ) : (
-                      <span className={p.isExcluded ? 'line-through' : ''}>{p.label}</span>
-                    )}
+                    <input 
+                      type="text" 
+                      className={`table-input w-full text-left ${compact ? 'text-xs py-0.5 px-1' : ''} ${p.isExcluded ? 'line-through opacity-50' : ''}`} 
+                      value={p.label || ''} 
+                      onChange={(e) => onUpdatePart(i, 'label', e.target.value)}
+                      placeholder="Description"
+                      disabled={p.isExcluded}
+                      title="Edit specification description"
+                    />
                   </td>
                   <td className="font-mono" style={tdStyle(false, false)}>
                     <input 
@@ -204,7 +229,7 @@ export default function PartsTable({ parts, result, rates, dims, onUpdatePart, o
                     </div>
                   </td>
                 </tr>
-              ))}
+              )))}
             </tbody>
           </table>
         </div>
@@ -241,7 +266,7 @@ export default function PartsTable({ parts, result, rates, dims, onUpdatePart, o
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
-              Add Custom Part
+              + Add Specification Part
             </button>
           )}
         </div>

@@ -7,6 +7,9 @@ export const inchToMm = (inch) => inch * MM_PER_INCH;
 export const calcCFT = (l, w, h, qty) =>
   (l * w * h * qty) / (FOOT_MM ** 3);
 
+export const calcSFT = (l, w, qty) =>
+  (l * w * qty) / (FOOT_MM ** 2);
+
 export const DEFAULT_PINE_WOOD_BOX_RATES = {
   cftRate: 925,
   labour: 190,

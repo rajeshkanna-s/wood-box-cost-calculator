@@ -18,30 +18,26 @@ import {
 export function useBoxCalculator() {
   const [activeTab, setActiveTab] = useState('pine-wood-box');
 
-  // Independent states for each product calculator
-  const [pineWoodBoxState, setPineWoodBoxState] = useState({
-    dims: { l: 75, w: 35, h: 35, unit: 'in' },
-    rates: DEFAULT_PINE_WOOD_BOX_RATES,
-    parts: buildPineWoodBoxParts(75, 35, 35)
-  });
+  const createEmptyState = (tab) => {
+    const defaultUnit = (tab === 'pine-wood-box') ? 'in' : 'mm';
+    const defaultRates = {
+      'pine-wood-box': DEFAULT_PINE_WOOD_BOX_RATES,
+      'ply-wood-pallet': DEFAULT_PLY_WOOD_PALLET_RATES,
+      'pine-wood-pallet': DEFAULT_PINE_WOOD_PALLET_RATES,
+      'pine-plywood-box': DEFAULT_PINE_PLYWOOD_BOX_RATES,
+    };
+    return {
+      dims: { l: '', w: '', h: '', unit: defaultUnit },
+      rates: defaultRates[tab] || DEFAULT_PINE_WOOD_BOX_RATES,
+      parts: []
+    };
+  };
 
-  const [plyWoodPalletState, setPlyWoodPalletState] = useState({
-    dims: { l: 1200, w: 1100, h: 195, unit: 'mm' },
-    rates: DEFAULT_PLY_WOOD_PALLET_RATES,
-    parts: buildPlywoodPalletParts(1200 / 25.4, 1100 / 25.4, 195 / 25.4)
-  });
-
-  const [pineWoodPalletState, setPineWoodPalletState] = useState({
-    dims: { l: 1150, w: 1150, h: 150, unit: 'mm' },
-    rates: DEFAULT_PINE_WOOD_PALLET_RATES,
-    parts: buildPineWoodPalletParts(1150 / 25.4, 1150 / 25.4, 150 / 25.4)
-  });
-
-  const [pinePlywoodBoxState, setPinePlywoodBoxState] = useState({
-    dims: { l: 1140, w: 800, h: 195, unit: 'mm' },
-    rates: DEFAULT_PINE_PLYWOOD_BOX_RATES,
-    parts: buildPinePlywoodBoxParts(1140 / 25.4, 800 / 25.4, 195 / 25.4)
-  });
+  // Independent states for each product calculator - initialized empty
+  const [pineWoodBoxState, setPineWoodBoxState] = useState(() => createEmptyState('pine-wood-box'));
+  const [plyWoodPalletState, setPlyWoodPalletState] = useState(() => createEmptyState('ply-wood-pallet'));
+  const [pineWoodPalletState, setPineWoodPalletState] = useState(() => createEmptyState('pine-wood-pallet'));
+  const [pinePlywoodBoxState, setPinePlywoodBoxState] = useState(() => createEmptyState('pine-plywood-box'));
 
   // Helper to get state and setter for active tab
   const getActiveData = () => {
@@ -189,15 +185,25 @@ export function useBoxCalculator() {
 
   // Update dimensions and trigger auto-regeneration of parts
   const updateDim = (key, val) => {
-    const numVal = Number(val) || 0;
+    const cleanVal = (val === '' || val === null || val === undefined) ? '' : (isNaN(val) ? '' : Number(val));
     activeSetter(prev => {
-      const nextDims = { ...prev.dims, [key]: numVal };
-      const nextParts = getGeneratedParts(activeTab, nextDims.l, nextDims.w, nextDims.h, nextDims.unit, nextDims.th);
-      const mergedParts = mergeParts(prev.parts, nextParts);
+      const nextDims = { ...prev.dims, [key]: cleanVal };
+      const hasDims = Boolean(
+        Number(nextDims.l) > 0 && 
+        Number(nextDims.w) > 0 && 
+        (activeTab === 'ply-wood-pallet' ? true : Number(nextDims.h) > 0)
+      );
+      let nextParts = prev.parts;
+      if (hasDims) {
+        const generated = getGeneratedParts(activeTab, nextDims.l, nextDims.w, nextDims.h, nextDims.unit, nextDims.th);
+        nextParts = mergeParts(prev.parts, generated);
+      } else if (!nextDims.l && !nextDims.w && !nextDims.h) {
+        nextParts = [];
+      }
       return {
         ...prev,
         dims: nextDims,
-        parts: mergedParts
+        parts: nextParts
       };
     });
   };
@@ -529,6 +535,14 @@ export function useBoxCalculator() {
     }
   }, [activeTab, pineWoodBoxResult, plyWoodPalletResult, pineWoodPalletResult, pinePlywoodBoxResult]);
 
+  const resetToEmpty = () => {
+    activeSetter(prev => ({
+      ...prev,
+      dims: { l: '', w: '', h: '', unit: prev.dims.unit || 'in' },
+      parts: []
+    }));
+  };
+
   const loadSavedState = (savedDims, savedRates, savedParts) => {
     activeSetter({
       dims: savedDims,
@@ -553,6 +567,7 @@ export function useBoxCalculator() {
     removePart,
     togglePartExclusion,
     resetParts,
+    resetToEmpty,
     loadSavedState,
     // Expose all individual states and results for preview sheets
     pineWoodBox: { dims: pineWoodBoxState.dims, rates: pineWoodBoxState.rates, result: pineWoodBoxResult },
