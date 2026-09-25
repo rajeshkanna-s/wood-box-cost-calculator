@@ -54,14 +54,16 @@ export default function SpecificationsRegistry({
           .from('preset_sizes')
           .select('*')
           .eq('product_type', productType)
+          .not('label', 'ilike', '__DELETED__%')
           .order('created_at', { ascending: true });
 
         if (error) throw error;
-        setPresetSizes(data || []);
-        if (data && data.length > 0) {
+        const validPresets = (data || []).filter(p => !p.label?.startsWith('__DELETED__'));
+        setPresetSizes(validPresets);
+        if (validPresets && validPresets.length > 0) {
           // If current presetSizeId is not in data, pick first
-          if (!data.some(p => p.id === presetSizeId)) {
-            setPresetSizeId(data[0].id);
+          if (!validPresets.some(p => p.id === presetSizeId)) {
+            setPresetSizeId(validPresets[0].id);
           }
         } else {
           setPresetSizeId('');

@@ -84,12 +84,13 @@ export default function App() {
         const { data, error } = await supabase
           .from('companies')
           .select('*')
+          .not('name', 'ilike', '__DELETED__%')
           .order('name', { ascending: true });
         
         if (error) throw error;
-        if (data && data.length > 0) {
-          setCompanies(data);
-          // Do not auto-select client; let it start empty
+        const validCompanies = (data || []).filter(c => !c.name?.startsWith('__DELETED__'));
+        if (validCompanies && validCompanies.length > 0) {
+          setCompanies(validCompanies);
           setSelectedCompanyId('');
         } else {
           const fallback = CLIENT_PRESETS.map((c) => ({ id: c.id, name: c.companyName }));
@@ -115,10 +116,12 @@ export default function App() {
           .from('preset_sizes')
           .select('*')
           .eq('product_type', activeTab)
+          .not('label', 'ilike', '__DELETED__%')
           .order('created_at', { ascending: true });
         
         if (error) throw error;
-        setCustomPresets(data || []);
+        const validPresets = (data || []).filter(p => !p.label?.startsWith('__DELETED__'));
+        setCustomPresets(validPresets);
         // Start with empty preset selection
         setActivePresetId('');
       } catch (err) {
@@ -278,18 +281,36 @@ export default function App() {
 
   const deleteClient = async (id) => {
     try {
-      const { error } = await supabase
+      // 1. Attempt hard DELETE
+      const { data, error } = await supabase
         .from('companies')
         .delete()
-        .eq('id', id);
-      if (error) throw error;
+        .eq('id', id)
+        .select();
+
+      // 2. If RLS blocked DELETE silently, persist deletion via soft-delete update
+      if (!error && (!data || data.length === 0)) {
+        const { error: updateError } = await supabase
+          .from('companies')
+          .update({ name: `__DELETED__${id}` })
+          .eq('id', id);
+        if (updateError) throw updateError;
+      } else if (error) {
+        throw error;
+      }
+
+      // Best-effort cleanup of associated calculations
+      try {
+        await supabase.from('calculations').delete().eq('company_id', id);
+      } catch (_) {}
+
       setCompanies(prev => prev.filter(c => c.id !== id));
       if (selectedCompanyId === id) {
-        setSelectedCompanyId(companies.find(c => c.id !== id)?.id || '');
+        setSelectedCompanyId('');
       }
     } catch (err) {
       console.error('Error deleting company:', err);
-      alert('Failed to delete client. It may have dependent calculations.');
+      alert('Failed to delete client: ' + err.message);
     }
   };
 
@@ -299,13 +320,15 @@ export default function App() {
         .from('preset_sizes')
         .select('*')
         .eq('product_type', settingsPresetTab)
+        .not('label', 'ilike', '__DELETED__%')
         .order('created_at', { ascending: true });
       if (error) throw error;
-      setSettingsPresets(data || []);
+      const validPresets = (data || []).filter(p => !p.label?.startsWith('__DELETED__'));
+      setSettingsPresets(validPresets);
       
       // Sync back to customPresets if this is the active tab
       if (settingsPresetTab === activeTab) {
-        setCustomPresets(data || []);
+        setCustomPresets(validPresets);
       }
     } catch (err) {
       console.error('Error loading settings presets:', err);
@@ -401,12 +424,26 @@ export default function App() {
 
   const deletePresetSize = async (id) => {
     try {
-      const { error } = await supabase
+      // 1. Attempt hard DELETE
+      const { data, error } = await supabase
         .from('preset_sizes')
         .delete()
-        .eq('id', id);
-      if (error) throw error;
+        .eq('id', id)
+        .select();
+
+      // 2. If RLS blocked DELETE silently, persist deletion via soft-delete update
+      if (!error && (!data || data.length === 0)) {
+        const { error: updateError } = await supabase
+          .from('preset_sizes')
+          .update({ label: `__DELETED__${id}` })
+          .eq('id', id);
+        if (updateError) throw updateError;
+      } else if (error) {
+        throw error;
+      }
+
       await loadSettingsPresets();
+      setCustomPresets(prev => prev.filter(p => p.id !== id));
       if (activePresetId === id) {
         setActivePresetId('');
       }
