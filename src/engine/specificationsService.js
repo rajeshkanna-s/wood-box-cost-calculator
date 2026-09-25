@@ -30,7 +30,7 @@ export async function fetchSpecifications({ companyId, presetSizeId, productType
         .eq('product_type', productType)
         .maybeSingle();
 
-      if (!error && data && Array.isArray(data.parts) && data.parts.length > 0) {
+      if (!error && data && Array.isArray(data.parts)) {
         return {
           parts: data.parts,
           rates: data.rates || DEFAULT_RATES[productType] || {},

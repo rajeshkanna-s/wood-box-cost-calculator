@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../../engine/supabaseClient';
 import { fetchSpecifications, saveSpecifications, generateDefaultSpecs } from '../../engine/specificationsService';
 import { calcCFT, calcSFT } from '../../engine/cft';
@@ -126,15 +126,17 @@ export default function SpecificationsRegistry({
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  const autoSaveTimerRef = useRef(null);
+
   // Save specifications to DB
   const handleSaveToDb = async (updatedSpecs = specs) => {
     if (!companyId) {
       alert('Please select a company to save specifications.');
-      return;
+      return false;
     }
     if (!presetSizeId) {
       alert('Please select a preset size to save specifications.');
-      return;
+      return false;
     }
 
     setSyncStatus('saving');
@@ -148,7 +150,6 @@ export default function SpecificationsRegistry({
       });
 
       setSyncStatus('saved');
-      showToast('Specifications successfully saved to database!');
       if (onSpecificationsSaved) {
         onSpecificationsSaved({
           companyId,
@@ -158,27 +159,36 @@ export default function SpecificationsRegistry({
         });
       }
       setTimeout(() => setSyncStatus('synced'), 2500);
+      return true;
     } catch (err) {
       console.error('Error saving specifications:', err);
       setSyncStatus('error');
       alert('Failed to save specifications: ' + err.message);
+      return false;
     }
   };
 
-  // Update a field in a spec row
+  // Update a field in a spec row with debounced auto-save to DB
   const handleUpdateSpec = (index, field, value) => {
     setSpecs(prev => {
       const next = [...prev];
       const textFields = ['id', 'label'];
       const val = textFields.includes(field) ? value : (field === 'isPly' || field === 'isExcluded' ? value : Number(value) || 0);
       next[index] = { ...next[index], [field]: val };
+
+      // Debounce auto-save to DB for cell edits
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+      setSyncStatus('saving');
+      autoSaveTimerRef.current = setTimeout(() => {
+        handleSaveToDb(next);
+      }, 1000);
+
       return next;
     });
-    setSyncStatus('unsaved');
   };
 
-  // Add a new specification row
-  const handleAddSpecification = (e) => {
+  // Add a new specification row with automatic DB save
+  const handleAddSpecification = async (e) => {
     e?.preventDefault();
     if (!newPartId.trim()) {
       alert('Please enter a Part Code (e.g. TOP, SIDE, TR, etc.)');
@@ -205,43 +215,46 @@ export default function SpecificationsRegistry({
     setNewW('');
     setNewH('');
     setNewQty('2');
-    setSyncStatus('unsaved');
-    showToast(`Added component "${newPart.id}". Click Save or keep editing.`);
-  };
 
-  // Delete a specification row
-  const handleDeleteSpec = (index) => {
-    const item = specs[index];
-    if (window.confirm(`Delete component "${item.id} - ${item.label}"?`)) {
-      const updated = specs.filter((_, i) => i !== index);
-      setSpecs(updated);
-      setSyncStatus('unsaved');
-      showToast(`Removed component "${item.id}".`);
+    // Automatically save directly to database
+    const success = await handleSaveToDb(updated);
+    if (success !== false) {
+      showToast(`Added component "${newPart.id}" and automatically saved to database!`);
     }
   };
 
-  // Toggle exclusion of a component
-  const handleToggleExclude = (index) => {
-    setSpecs(prev => {
-      const next = [...prev];
-      next[index] = { ...next[index], isExcluded: !next[index].isExcluded };
-      return next;
-    });
-    setSyncStatus('unsaved');
+  // Delete a specification row with automatic DB save
+  const handleDeleteSpec = async (index) => {
+    const item = specs[index];
+    if (!item) return;
+
+    const updated = specs.filter((_, i) => i !== index);
+    setSpecs(updated);
+
+    // Automatically save updated list directly to database
+    const success = await handleSaveToDb(updated);
+    if (success !== false) {
+      showToast(`Deleted component "${item.id}" and saved changes to database!`);
+    }
   };
 
-  // Reset to formula defaults
-  const handleResetToDefaults = () => {
+  // Toggle exclusion of a component with automatic DB save
+  const handleToggleExclude = async (index) => {
+    const updated = specs.map((s, i) => i === index ? { ...s, isExcluded: !s.isExcluded } : s);
+    setSpecs(updated);
+    await handleSaveToDb(updated);
+  };
+
+  // Reset to formula defaults with automatic DB save
+  const handleResetToDefaults = async () => {
     if (!currentPreset) {
       alert('No preset size selected.');
       return;
     }
-    if (window.confirm('Reset this specifications table to standard calculated box formulas? This will overwrite custom parts for this profile.')) {
-      const defaults = generateDefaultSpecs(productType, currentPreset);
-      setSpecs(defaults);
-      setSyncStatus('unsaved');
-      showToast('Reset to standard calculated specifications. Click Save to DB to apply.');
-    }
+    const defaults = generateDefaultSpecs(productType, currentPreset);
+    setSpecs(defaults);
+    await handleSaveToDb(defaults);
+    showToast('Reset specifications to standard formulas and saved to database!');
   };
 
   // Calculated totals for summary
