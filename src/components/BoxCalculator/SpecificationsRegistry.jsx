@@ -368,10 +368,10 @@ export default function SpecificationsRegistry({
 
       {/* Context Selection Bar: Company | Product Tab | Preset Size */}
       <div className="bg-slate-500/5 p-4 rounded-xl space-y-3 border" style={{ borderColor: 'var(--card-border)' }}>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-end">
           {/* 1. Client Company Select */}
-          <div className="space-y-1">
-            <label className="text-[11px] uppercase font-bold text-slate-400 tracking-wider block">
+          <div className="lg:col-span-3 space-y-1.5">
+            <label className="text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider block">
               1. Client / Company:
             </label>
             <select
@@ -380,8 +380,8 @@ export default function SpecificationsRegistry({
                 setCompanyId(e.target.value);
                 if (onSelectCompany) onSelectCompany(e.target.value);
               }}
-              className="premium-select w-full text-xs font-medium"
-              style={{ height: '36px', background: 'var(--card-inner-bg)' }}
+              className="premium-select w-full text-xs font-semibold"
+              style={{ height: '38px', background: 'var(--card-inner-bg)' }}
             >
               {companies.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
@@ -389,39 +389,50 @@ export default function SpecificationsRegistry({
             </select>
           </div>
 
-          {/* 2. Product Calculator Tab */}
-          <div className="space-y-1">
-            <label className="text-[11px] uppercase font-bold text-slate-400 tracking-wider block">
-              2. Product Category:
+          {/* 2. Product Category Tab */}
+          <div className="lg:col-span-5 space-y-1.5">
+            <label className="text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider flex items-center justify-between">
+              <span>2. Product Category:</span>
+              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold lowercase tracking-normal hidden sm:inline">
+                {PRODUCT_TABS.find(t => t.id === productType)?.label}
+              </span>
             </label>
-            <div className="flex gap-1 bg-slate-500/10 p-1 rounded-lg">
-              {PRODUCT_TABS.map(t => (
-                <button
-                  key={t.id}
-                  type="button"
-                  onClick={() => setProductType(t.id)}
-                  className={`flex-1 py-1.5 text-[10px] font-bold rounded uppercase tracking-wider transition-all ${
-                    productType === t.id
-                      ? 'bg-primary text-white shadow-sm'
-                      : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-200'
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
+            <div className="flex p-1 bg-slate-200/70 dark:bg-slate-800/80 rounded-xl border border-slate-300/50 dark:border-slate-700/60 shadow-inner h-[38px] items-center gap-1">
+              {PRODUCT_TABS.map(t => {
+                const isActive = productType === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setProductType(t.id)}
+                    className={`flex-1 h-[30px] px-2 flex items-center justify-center text-[10.5px] font-bold rounded-lg uppercase tracking-wider transition-all duration-150 whitespace-nowrap ${
+                      isActive
+                        ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/30'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-700/50'
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* 3. Preset Size Select */}
-          <div className="space-y-1">
-            <label className="text-[11px] uppercase font-bold text-slate-400 tracking-wider block">
-              3. Preset Box Size:
+          {/* 3. Preset Box Size */}
+          <div className="lg:col-span-4 space-y-1.5">
+            <label className="text-[11px] uppercase font-bold text-slate-500 dark:text-slate-400 tracking-wider flex items-center justify-between">
+              <span>3. Preset Box Size:</span>
+              {presetSizes.length > 0 && (
+                <span className="text-[10px] text-slate-400 font-mono font-normal">
+                  ({presetSizes.length} sizes)
+                </span>
+              )}
             </label>
             <select
               value={presetSizeId}
               onChange={(e) => setPresetSizeId(e.target.value)}
-              className="premium-select w-full text-xs font-medium"
-              style={{ height: '36px', background: 'var(--card-inner-bg)' }}
+              className="premium-select w-full text-xs font-semibold"
+              style={{ height: '38px', background: 'var(--card-inner-bg)' }}
               disabled={presetSizes.length === 0}
             >
               {presetSizes.length === 0 && (

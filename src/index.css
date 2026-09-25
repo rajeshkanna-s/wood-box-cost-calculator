@@ -434,6 +434,10 @@
   .dark .brand-company-text {
     color: #60a5fa !important;
   }
+  .bg-primary {
+    background-color: #0064DC !important;
+    color: #ffffff !important;
+  }
 }
 
 @keyframes fadeIn {
